@@ -1,70 +1,111 @@
 /* =====================================================
-   NOW APP — PHASE 2
-   Real Camera Experience
+   L7ZA — PHASE 2
 ===================================================== */
 
 
 /* =====================================================
-   GLOBAL ELEMENTS
+   STORAGE
 ===================================================== */
 
-const screens = document.querySelectorAll(".screen");
-const navItems = document.querySelectorAll(".nav-item");
+const STORAGE_KEY = "l7za_phase2_instants";
 
-const captureButton =
-    document.getElementById("captureButton");
+let localInstants = [];
 
-const navCamera =
-    document.getElementById("navCamera");
-
-const captureModal =
-    document.getElementById("captureModal");
-
-const closeCapture =
-    document.getElementById("closeCapture");
-
-const openInstants =
-    document.getElementById("openInstants");
-
-const instantCount =
-    document.getElementById("instantCount");
-
-const requestsButton =
-    document.getElementById("requestsButton");
-
-const cardArea =
-    document.getElementById("cardArea");
-
-const currentInstant =
-    document.getElementById("currentInstant");
-
-const friendSearch =
-    document.getElementById("friendSearch");
+try {
+    localInstants =
+        JSON.parse(
+            localStorage.getItem(STORAGE_KEY)
+        ) || [];
+} catch {
+    localInstants = [];
+}
 
 
 /* =====================================================
-   STATE
+   HELPERS
 ===================================================== */
 
-let currentIndex = 0;
+function $(id) {
+    return document.getElementById(id);
+}
 
-let cameraStream = null;
 
-let capturedPhoto = null;
+function escapeHTML(value) {
 
-let cameraFacingMode = "environment";
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
-let cameraOpen = false;
+}
+
+
+function saveLocalInstants() {
+
+    localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(localInstants)
+    );
+
+}
+
+
+function showToast(message) {
+
+    let toast =
+        document.querySelector(
+            ".l7za-toast"
+        );
+
+    if (!toast) {
+
+        toast =
+            document.createElement("div");
+
+        toast.className =
+            "l7za-toast";
+
+        document.body.appendChild(toast);
+
+    }
+
+    toast.textContent = message;
+
+    toast.classList.add("show");
+
+    clearTimeout(
+        window.__l7zaToastTimer
+    );
+
+    window.__l7zaToastTimer =
+        setTimeout(() => {
+
+            toast.classList.remove("show");
+
+        }, 2200);
+
+}
 
 
 /* =====================================================
    SCREEN NAVIGATION
 ===================================================== */
 
+const screens =
+    document.querySelectorAll(".screen");
+
+const navItems =
+    document.querySelectorAll(".nav-item");
+
+
 function showScreen(screenId) {
 
     screens.forEach(screen => {
+
         screen.classList.remove("active");
+
     });
 
 
@@ -73,7 +114,9 @@ function showScreen(screenId) {
 
 
     if (target) {
+
         target.classList.add("active");
+
     }
 
 
@@ -86,7 +129,9 @@ function showScreen(screenId) {
             item.dataset.screen ===
             screenId
         ) {
+
             item.classList.add("active");
+
         }
 
     });
@@ -100,23 +145,24 @@ function showScreen(screenId) {
 }
 
 
-/* =====================================================
-   NAVIGATION BUTTONS
-===================================================== */
-
 navItems.forEach(item => {
 
-    item.addEventListener("click", () => {
+    item.addEventListener(
+        "click",
+        () => {
 
-        const screen =
-            item.dataset.screen;
+            const screen =
+                item.dataset.screen;
 
 
-        if (screen) {
-            showScreen(screen);
+            if (screen) {
+
+                showScreen(screen);
+
+            }
+
         }
-
-    });
+    );
 
 });
 
@@ -129,58 +175,95 @@ document
     .querySelectorAll(".back-button")
     .forEach(button => {
 
-        button.addEventListener("click", () => {
+        button.addEventListener(
+            "click",
+            () => {
 
-            showScreen(
-                button.dataset.back
-            );
+                showScreen(
+                    button.dataset.back
+                );
 
-        });
+            }
+        );
 
     });
 
 
 /* =====================================================
-   CAMERA HTML
+   CAMERA SYSTEM
 ===================================================== */
 
-function createCameraInterface() {
+const captureButton =
+    $("captureButton");
 
-    const fakeCamera =
-        document.querySelector(".fake-camera");
+const navCamera =
+    $("navCamera");
+
+const captureModal =
+    $("captureModal");
+
+const closeCapture =
+    $("closeCapture");
 
 
-    if (!fakeCamera) {
+let cameraStream = null;
+
+let currentFacingMode = "environment";
+
+let capturedImageData = null;
+
+let cameraReady = false;
+
+
+/* =====================================================
+   BUILD PHASE 2 CAMERA
+===================================================== */
+
+function buildCameraUI() {
+
+    if (!captureModal) {
         return;
     }
 
 
-    fakeCamera.innerHTML = `
-
-        <video
-            id="cameraVideo"
-            autoplay
-            playsinline
-            muted
-        ></video>
+    const content =
+        captureModal.querySelector(
+            ".modal-content"
+        );
 
 
-        <canvas
-            id="cameraCanvas"
-        ></canvas>
+    if (!content) {
+        return;
+    }
 
 
-        <div class="camera-ui">
+    content.innerHTML = `
 
-            <div class="camera-top">
+        <button
+            class="modal-close"
+            id="phase2CloseCamera"
+            aria-label="Close camera"
+        >
+            ×
+        </button>
 
-                <div class="camera-status">
-                    <span class="camera-status-dot"></span>
-                    <span>NOW</span>
-                </div>
+
+        <div class="phase2-camera">
+
+
+            <video
+                id="cameraVideo"
+                class="camera-video"
+                autoplay
+                muted
+                playsinline
+            ></video>
+
+
+            <div class="camera-top-controls">
 
                 <button
-                    class="camera-switch"
+                    class="camera-control-button"
                     id="switchCamera"
                     type="button"
                     aria-label="Switch camera"
@@ -192,228 +275,178 @@ function createCameraInterface() {
 
 
             <div
+                class="camera-status"
+                id="cameraStatus"
+            >
+                Camera
+            </div>
+
+
+            <div
+                class="camera-bottom-controls"
+            >
+
+                <button
+                    class="camera-capture"
+                    id="phase2Capture"
+                    type="button"
+                    aria-label="Capture"
+                ></button>
+
+            </div>
+
+
+            <div
                 class="camera-error"
                 id="cameraError"
+                style="display:none;"
             >
-                <div class="camera-error-icon">
-                    📷
-                </div>
 
-                <h3>
-                    Camera unavailable
-                </h3>
+                <div class="camera-error-inner">
 
-                <p>
-                    Please allow camera access
-                    to take an Instant.
-                </p>
-
-                <button
-                    class="camera-retry"
-                    id="retryCamera"
-                    type="button"
-                >
-                    Try again
-                </button>
-            </div>
-
-
-            <div class="camera-bottom">
-
-                <p class="camera-rule">
-                    One moment.
-                    <br>
-                    No filters. No retakes.
-                </p>
-
-
-                <button
-                    class="real-capture-button"
-                    id="realCaptureButton"
-                    type="button"
-                    aria-label="Take photo"
-                >
-                    <span></span>
-                </button>
-
-
-                <small>
-                    Tap to capture
-                </small>
-
-            </div>
-
-        </div>
-
-
-        <div
-            class="capture-result"
-            id="captureResult"
-        >
-
-            <img
-                id="capturedImage"
-                alt="Captured Instant"
-            />
-
-
-            <div class="result-overlay">
-
-                <div class="result-top">
-
-                    <span>
-                        INSTANT
-                    </span>
-
-                </div>
-
-
-                <div class="result-bottom">
-
-                    <div>
-                        <strong>
-                            Your Instant
-                        </strong>
-
-                        <p>
-                            Captured just now
-                        </p>
+                    <div
+                        class="camera-error-icon"
+                    >
+                        📷
                     </div>
 
+                    <h2>
+                        Camera unavailable
+                    </h2>
+
+                    <p id="cameraErrorText">
+                        Camera access is required
+                        to create an Instant.
+                    </p>
 
                     <button
-                        id="postInstantButton"
+                        id="retryCamera"
                         type="button"
                     >
-                        Post Instant
+                        Try again
                     </button>
 
                 </div>
 
             </div>
 
-        </div>
 
+            <div
+                class="capture-preview"
+                id="capturePreview"
+            >
+
+                <img
+                    id="previewImage"
+                    class="preview-image"
+                    alt="Captured instant"
+                >
+
+
+                <div class="preview-bottom">
+
+                    <textarea
+                        id="captionInput"
+                        class="caption-input"
+                        maxlength="180"
+                        placeholder="Add a caption... (optional)"
+                    ></textarea>
+
+
+                    <div class="preview-actions">
+
+                        <button
+                            class="preview-action preview-send"
+                            id="sendInstant"
+                            type="button"
+                        >
+                            Send
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="send-success"
+                id="sendSuccess"
+            >
+
+                <div>
+
+                    <div
+                        class="send-success-icon"
+                    >
+                        ✓
+                    </div>
+
+                    <h2>
+                        Sent
+                    </h2>
+
+                    <p>
+                        Your Instant was saved.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
     `;
 
 
-    setupCameraControls();
+    document
+        .getElementById(
+            "phase2CloseCamera"
+        )
+        .addEventListener(
+            "click",
+            closeCamera
+        );
 
-}
 
-
-/* =====================================================
-   CAMERA CONTROLS
-===================================================== */
-
-function setupCameraControls() {
-
-    const switchCamera =
-        document.getElementById(
+    document
+        .getElementById(
             "switchCamera"
-        );
-
-
-    const retryCamera =
-        document.getElementById(
-            "retryCamera"
-        );
-
-
-    const realCaptureButton =
-        document.getElementById(
-            "realCaptureButton"
-        );
-
-
-    const postInstantButton =
-        document.getElementById(
-            "postInstantButton"
-        );
-
-
-    if (switchCamera) {
-
-        switchCamera.addEventListener(
+        )
+        .addEventListener(
             "click",
-            async () => {
-
-                cameraFacingMode =
-                    cameraFacingMode ===
-                    "environment"
-                        ? "user"
-                        : "environment";
-
-
-                await startCamera();
-
-            }
+            switchCamera
         );
 
-    }
 
-
-    if (retryCamera) {
-
-        retryCamera.addEventListener(
-            "click",
-            async () => {
-
-                await startCamera();
-
-            }
-        );
-
-    }
-
-
-    if (realCaptureButton) {
-
-        realCaptureButton.addEventListener(
+    document
+        .getElementById(
+            "phase2Capture"
+        )
+        .addEventListener(
             "click",
             capturePhoto
         );
 
-    }
 
-
-    if (postInstantButton) {
-
-        postInstantButton.addEventListener(
+    document
+        .getElementById(
+            "retryCamera"
+        )
+        .addEventListener(
             "click",
-            postInstant
+            startCamera
         );
 
-    }
 
-}
-
-
-/* =====================================================
-   OPEN CAMERA
-===================================================== */
-
-async function openCamera() {
-
-    if (!captureModal) {
-        return;
-    }
-
-
-    cameraOpen = true;
-
-    capturedPhoto = null;
-
-
-    captureModal.classList.add("show");
-
-    document.body.style.overflow = "hidden";
-
-
-    createCameraInterface();
-
-
-    await startCamera();
+    document
+        .getElementById(
+            "sendInstant"
+        )
+        .addEventListener(
+            "click",
+            sendInstant
+        );
 
 }
 
@@ -425,21 +458,16 @@ async function openCamera() {
 async function startCamera() {
 
     const video =
-        document.getElementById(
-            "cameraVideo"
-        );
+        $("cameraVideo");
 
+    const error =
+        $("cameraError");
 
-    const errorBox =
-        document.getElementById(
-            "cameraError"
-        );
+    const errorText =
+        $("cameraErrorText");
 
-
-    const captureControls =
-        document.querySelector(
-            ".camera-bottom"
-        );
+    const status =
+        $("cameraStatus");
 
 
     if (!video) {
@@ -447,38 +475,59 @@ async function startCamera() {
     }
 
 
+    cameraReady = false;
+
+
+    if (error) {
+        error.style.display = "none";
+    }
+
+
+    if (status) {
+        status.textContent =
+            "Starting camera...";
+    }
+
+
     stopCamera();
+
+
+    if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+    ) {
+
+        showCameraError(
+            "Your browser does not support camera access."
+        );
+
+        return;
+
+    }
 
 
     try {
 
-        const constraints = {
-
-            video: {
-                facingMode: {
-                    ideal:
-                        cameraFacingMode
-                },
-
-                width: {
-                    ideal: 1920
-                },
-
-                height: {
-                    ideal: 1080
-                }
-            },
-
-            audio: false
-
-        };
-
-
         cameraStream =
             await navigator.mediaDevices
-                .getUserMedia(
-                    constraints
-                );
+                .getUserMedia({
+
+                    video: {
+                        facingMode:
+                            currentFacingMode,
+
+                        width: {
+                            ideal: 1080
+                        },
+
+                        height: {
+                            ideal: 1920
+                        }
+                    },
+
+                    audio: false
+
+                });
 
 
         video.srcObject =
@@ -488,38 +537,135 @@ async function startCamera() {
         await video.play();
 
 
-        if (errorBox) {
-            errorBox.classList.remove(
-                "show"
+        cameraReady = true;
+
+
+        if (currentFacingMode === "user") {
+
+            video.classList.add(
+                "mirrored"
             );
+
+            status.textContent =
+                "Front camera";
+
+        } else {
+
+            video.classList.remove(
+                "mirrored"
+            );
+
+            status.textContent =
+                "Back camera";
+
         }
 
 
-        if (captureControls) {
-            captureControls.style.display =
-                "flex";
-        }
-
-
-    } catch (error) {
+    } catch (errorObject) {
 
         console.error(
             "Camera error:",
-            error
+            errorObject
         );
 
 
-        if (errorBox) {
-            errorBox.classList.add(
-                "show"
-            );
-        }
+        showCameraError(
+            getCameraErrorMessage(
+                errorObject
+            )
+        );
+
+    }
+
+}
 
 
-        if (captureControls) {
-            captureControls.style.display =
-                "none";
-        }
+/* =====================================================
+   CAMERA ERROR
+===================================================== */
+
+function getCameraErrorMessage(error) {
+
+    if (
+        error &&
+        error.name ===
+        "NotAllowedError"
+    ) {
+
+        return (
+            "Camera permission was denied. " +
+            "Allow camera access in your browser settings."
+        );
+
+    }
+
+
+    if (
+        error &&
+        error.name ===
+        "NotFoundError"
+    ) {
+
+        return (
+            "No camera was found on this device."
+        );
+
+    }
+
+
+    if (
+        error &&
+        error.name ===
+        "NotReadableError"
+    ) {
+
+        return (
+            "The camera is currently being used by another app."
+        );
+
+    }
+
+
+    return (
+        "We couldn't start the camera. " +
+        "Please try again."
+    );
+
+}
+
+
+function showCameraError(message) {
+
+    const error =
+        $("cameraError");
+
+    const errorText =
+        $("cameraErrorText");
+
+    const status =
+        $("cameraStatus");
+
+
+    if (errorText) {
+
+        errorText.textContent =
+            message;
+
+    }
+
+
+    if (error) {
+
+        error.style.display =
+            "flex";
+
+    }
+
+
+    if (status) {
+
+        status.textContent =
+            "Camera unavailable";
 
     }
 
@@ -548,6 +694,30 @@ function stopCamera() {
 
     cameraStream = null;
 
+    cameraReady = false;
+
+}
+
+
+/* =====================================================
+   SWITCH CAMERA
+===================================================== */
+
+async function switchCamera() {
+
+    if (!cameraReady) {
+        return;
+    }
+
+
+    currentFacingMode =
+        currentFacingMode === "environment"
+            ? "user"
+            : "environment";
+
+
+    await startCamera();
+
 }
 
 
@@ -557,42 +727,41 @@ function stopCamera() {
 
 function capturePhoto() {
 
+    if (!cameraReady) {
+        return;
+    }
+
+
     const video =
-        document.getElementById(
-            "cameraVideo"
-        );
+        $("cameraVideo");
 
+    const preview =
+        $("capturePreview");
 
-    const canvas =
-        document.getElementById(
-            "cameraCanvas"
-        );
+    const image =
+        $("previewImage");
 
-
-    const result =
-        document.getElementById(
-            "captureResult"
-        );
-
-
-    const capturedImage =
-        document.getElementById(
-            "capturedImage"
-        );
+    const capture =
+        $("phase2Capture");
 
 
     if (
         !video ||
-        !canvas ||
-        !video.videoWidth
+        !preview ||
+        !image
     ) {
         return;
     }
 
 
+    const canvas =
+        document.createElement(
+            "canvas"
+        );
+
+
     canvas.width =
         video.videoWidth;
-
 
     canvas.height =
         video.videoHeight;
@@ -602,13 +771,13 @@ function capturePhoto() {
         canvas.getContext("2d");
 
 
-    /*
-        Mirror the front camera
-        correctly.
-    */
+    if (!context) {
+        return;
+    }
+
 
     if (
-        cameraFacingMode ===
+        currentFacingMode ===
         "user"
     ) {
 
@@ -617,7 +786,10 @@ function capturePhoto() {
             0
         );
 
-        context.scale(-1, 1);
+        context.scale(
+            -1,
+            1
+        );
 
     }
 
@@ -631,179 +803,230 @@ function capturePhoto() {
     );
 
 
-    capturedPhoto =
+    capturedImageData =
         canvas.toDataURL(
             "image/jpeg",
-            0.92
+            .82
         );
 
 
-    if (capturedImage) {
+    image.src =
+        capturedImageData;
 
-        capturedImage.src =
-            capturedPhoto;
+
+    preview.classList.add(
+        "show"
+    );
+
+
+    /*
+        Important:
+        No Retake button.
+        The user can only Send.
+    */
+
+    if (capture) {
+
+        capture.disabled =
+            true;
 
     }
 
-
     stopCamera();
 
+}
 
-    if (result) {
 
-        result.classList.add(
+/* =====================================================
+   SEND INSTANT
+===================================================== */
+
+function sendInstant() {
+
+    if (!capturedImageData) {
+        return;
+    }
+
+
+    const captionInput =
+        $("captionInput");
+
+
+    const caption =
+        captionInput
+            ? captionInput.value.trim()
+            : "";
+
+
+    const newInstant = {
+
+        id:
+            "local-" +
+            Date.now(),
+
+        name: "You",
+
+        username: "@you",
+
+        avatar: "Y",
+
+        time: "Just now",
+
+        caption: caption,
+
+        image: capturedImageData,
+
+        likes: 0,
+
+        seen: 0,
+
+        local: true
+
+    };
+
+
+    localInstants.unshift(
+        newInstant
+    );
+
+
+    saveLocalInstants();
+
+
+    renderLocalProfile();
+
+
+    updateHomeInstantCount();
+
+
+    const success =
+        $("sendSuccess");
+
+    const preview =
+        $("capturePreview");
+
+
+    if (preview) {
+
+        preview.classList.remove(
             "show"
         );
 
     }
 
 
-    const cameraBottom =
-        document.querySelector(
-            ".camera-bottom"
+    if (success) {
+
+        success.classList.add(
+            "show"
         );
 
-
-    if (cameraBottom) {
-        cameraBottom.style.display =
-            "none";
     }
-
-}
-
-
-/* =====================================================
-   POST INSTANT
-===================================================== */
-
-function postInstant() {
-
-    if (!capturedPhoto) {
-        return;
-    }
-
-
-    /*
-        For Phase 2 we store the captured
-        Instant locally.
-
-        Supabase storage/database can be
-        connected in the next phase.
-    */
-
-    const instant = {
-
-        name: "Omar",
-
-        username: "@omar",
-
-        avatar: "O",
-
-        time: "just now",
-
-        caption: "My Instant",
-
-        photoData:
-            capturedPhoto,
-
-        likes: 0,
-
-        seen: 0
-
-    };
-
-
-    const saved =
-        JSON.parse(
-            localStorage.getItem(
-                "now_my_instants"
-            ) || "[]"
-        );
-
-
-    saved.unshift(instant);
-
-
-    localStorage.setItem(
-        "now_my_instants",
-        JSON.stringify(saved)
-    );
-
-
-    closeCamera();
-
-
-    /*
-        Update profile preview
-        immediately.
-    */
-
-    addMyInstantPreview();
 
 
     showToast(
-        "Instant posted ✓"
+        "Instant sent ✓"
     );
+
+
+    setTimeout(() => {
+
+        closeCamera();
+
+    }, 1000);
 
 }
 
 
 /* =====================================================
-   ADD PROFILE INSTANT
+   OPEN CAMERA
 ===================================================== */
 
-function addMyInstantPreview() {
+function openCamera() {
 
-    const preview =
-        document.querySelector(
-            ".my-instant-preview"
-        );
-
-
-    if (!preview) {
+    if (!captureModal) {
         return;
     }
 
 
-    const first =
-        preview.firstElementChild;
-
-
-    const newInstant =
-        document.createElement("div");
-
-
-    newInstant.className =
-        "mini-instant";
-
-
-    newInstant.innerHTML = `
-
-        <span>📸</span>
-
-        <small>
-            Just now
-        </small>
-
-    `;
-
-
-    preview.insertBefore(
-        newInstant,
-        first
+    captureModal.classList.add(
+        "show"
     );
 
 
-    /*
-        Keep the preview clean.
-    */
+    document.body.style.overflow =
+        "hidden";
 
-    while (
-        preview.children.length > 3
-    ) {
 
-        preview.lastElementChild
-            .remove();
+    resetCameraState();
+
+    startCamera();
+
+}
+
+
+/* =====================================================
+   RESET CAMERA STATE
+===================================================== */
+
+function resetCameraState() {
+
+    capturedImageData = null;
+
+
+    const preview =
+        $("capturePreview");
+
+    const success =
+        $("sendSuccess");
+
+    const image =
+        $("previewImage");
+
+    const caption =
+        $("captionInput");
+
+    const capture =
+        $("phase2Capture");
+
+
+    if (preview) {
+
+        preview.classList.remove(
+            "show"
+        );
+
+    }
+
+
+    if (success) {
+
+        success.classList.remove(
+            "show"
+        );
+
+    }
+
+
+    if (image) {
+
+        image.removeAttribute(
+            "src"
+        );
+
+    }
+
+
+    if (caption) {
+
+        caption.value = "";
+
+    }
+
+
+    if (capture) {
+
+        capture.disabled = false;
 
     }
 
@@ -819,11 +1042,6 @@ function closeCamera() {
     stopCamera();
 
 
-    cameraOpen = false;
-
-    capturedPhoto = null;
-
-
     if (captureModal) {
 
         captureModal.classList.remove(
@@ -833,13 +1051,17 @@ function closeCamera() {
     }
 
 
-    document.body.style.overflow = "";
+    document.body.style.overflow =
+        "";
+
+
+    capturedImageData = null;
 
 }
 
 
 /* =====================================================
-   CAMERA BUTTONS
+   CAMERA EVENTS
 ===================================================== */
 
 if (captureButton) {
@@ -894,7 +1116,7 @@ if (captureModal) {
 
 
 /* =====================================================
-   ESCAPE TO CLOSE CAMERA
+   ESC CLOSE
 ===================================================== */
 
 document.addEventListener(
@@ -903,7 +1125,10 @@ document.addEventListener(
 
         if (
             event.key === "Escape" &&
-            cameraOpen
+            captureModal &&
+            captureModal.classList.contains(
+                "show"
+            )
         ) {
 
             closeCamera();
@@ -918,50 +1143,76 @@ document.addEventListener(
    INSTANT DATA
 ===================================================== */
 
-const instants = [
+const defaultInstants = [
 
     {
+        id: "demo-1",
+
         name: "Ahmed",
         username: "@ahmed",
         avatar: "A",
         time: "2 min ago",
-        caption: "Just got here 😂",
-        photo: "photo-one",
+
+        caption:
+            "Just got here 😂",
+
+        photo:
+            "photo-one",
+
         likes: 2,
         seen: 5
     },
 
     {
+        id: "demo-2",
+
         name: "Mohamed",
         username: "@mohamed",
         avatar: "M",
         time: "8 min ago",
+
         caption:
             "This place is actually crazy.",
-        photo: "photo-two",
+
+        photo:
+            "photo-two",
+
         likes: 4,
         seen: 7
     },
 
     {
+        id: "demo-3",
+
         name: "Youssef",
         username: "@youssef",
         avatar: "Y",
         time: "17 min ago",
+
         caption:
             "Trying something new 👀",
-        photo: "photo-three",
+
+        photo:
+            "photo-three",
+
         likes: 1,
         seen: 3
     },
 
     {
+        id: "demo-4",
+
         name: "Omar",
         username: "@omarh",
         avatar: "O",
         time: "24 min ago",
-        caption: "No context.",
-        photo: "photo-four",
+
+        caption:
+            "No context.",
+
+        photo:
+            "photo-four",
+
         likes: 6,
         seen: 9
     }
@@ -969,8 +1220,29 @@ const instants = [
 ];
 
 
+/*
+    Local Instants appear first.
+*/
+
+const instants = [
+    ...localInstants,
+    ...defaultInstants
+];
+
+
+let currentIndex = 0;
+
+
 /* =====================================================
-   RENDER INSTANT CARDS
+   CARD AREA
+===================================================== */
+
+const cardArea =
+    $("cardArea");
+
+
+/* =====================================================
+   RENDER CARDS
 ===================================================== */
 
 function renderInstantCards() {
@@ -984,164 +1256,181 @@ function renderInstantCards() {
 
 
     /*
-        Reverse order so the first
-        Instant appears on top.
+        Important:
+        index 0 is now physically the top card.
     */
 
-    for (
-        let i = instants.length - 1;
-        i >= 0;
-        i--
-    ) {
+    instants.forEach(
+        (instant, index) => {
 
-        const instant =
-            instants[i];
-
-
-        const card =
-            document.createElement(
-                "article"
-            );
+            const card =
+                document.createElement(
+                    "article"
+                );
 
 
-        card.className =
-            "instant-card";
+            card.className =
+                "instant-card";
 
 
-        card.dataset.index =
-            i;
+            card.dataset.index =
+                index;
 
 
-        card.innerHTML = `
+            const media =
+                instant.image
 
-            <div
-                class="
-                    instant-photo
-                    ${instant.photo}
-                "
-            >
+                    ? `
+                        <img
+                            src="${instant.image}"
+                            alt=""
+                        >
+
+                        ${
+                            instant.local
+                                ? `
+                                    <span
+                                        class="local-instant-badge"
+                                    >
+                                        Your Instant
+                                    </span>
+                                `
+                                : ""
+                        }
+                    `
+
+                    : `
+                        <div
+                            class="photo-placeholder"
+                        >
+                            ✦
+                        </div>
+                    `;
+
+
+            const photoClass =
+                instant.photo ||
+                "";
+
+
+            card.innerHTML = `
 
                 <div
-                    class="photo-placeholder"
+                    class="
+                        instant-photo
+                        ${photoClass}
+                    "
                 >
-                    ✦
-                </div>
 
-
-                <div
-                    class="instant-gradient"
-                ></div>
-
-
-                <div
-                    class="instant-info"
-                >
+                    ${media}
 
                     <div
-                        class="instant-user"
+                        class="instant-gradient"
+                    ></div>
+
+
+                    <div
+                        class="instant-info"
                     >
 
                         <div
-                            class="
-                                avatar
-                                avatar-${getAvatarClass(
+                            class="instant-user"
+                        >
+
+                            <div class="avatar">
+                                ${escapeHTML(
                                     instant.avatar
                                 )}
-                            "
-                        >
-                            ${instant.avatar}
+                            </div>
+
+
+                            <div>
+
+                                <strong>
+                                    ${escapeHTML(
+                                        instant.name
+                                    )}
+                                </strong>
+
+                                <span>
+                                    ${escapeHTML(
+                                        instant.username
+                                    )}
+                                    ·
+                                    ${escapeHTML(
+                                        instant.time
+                                    )}
+                                </span>
+
+                            </div>
+
                         </div>
 
 
-                        <div>
+                        ${
+                            instant.caption
+                                ? `
+                                    <p
+                                        class="instant-caption"
+                                    >
+                                        ${escapeHTML(
+                                            instant.caption
+                                        )}
+                                    </p>
+                                `
+                                : ""
+                        }
 
-                            <strong>
-                                ${instant.name}
-                            </strong>
 
-                            <span>
-                                ${instant.username}
-                                ·
-                                ${instant.time}
+                        <div
+                            class="instant-actions"
+                        >
+
+                            <button
+                                class="like-button"
+                                data-index="${index}"
+                                type="button"
+                            >
+
+                                <span>
+                                    ♡
+                                </span>
+
+                                <strong>
+                                    ${instant.likes}
+                                </strong>
+
+                            </button>
+
+
+                            <span
+                                class="seen-text"
+                            >
+                                👀
+                                ${instant.seen}
+                                seen
                             </span>
 
                         </div>
 
                     </div>
 
-
-                    <p
-                        class="instant-caption"
-                    >
-                        ${instant.caption}
-                    </p>
-
-
-                    <div
-                        class="instant-actions"
-                    >
-
-                        <button
-                            class="like-button"
-                            data-index="${i}"
-                            type="button"
-                        >
-
-                            <span>♡</span>
-
-                            <strong>
-                                ${instant.likes}
-                            </strong>
-
-                        </button>
-
-
-                        <span
-                            class="seen-text"
-                        >
-                            👀
-                            ${instant.seen}
-                            seen
-                        </span>
-
-                    </div>
-
                 </div>
 
-            </div>
-
-        `;
+            `;
 
 
-        cardArea.appendChild(card);
+            cardArea.appendChild(
+                card
+            );
 
-    }
+        }
+    );
 
 
     setupCardInteractions();
 
     updateProgress();
-
-}
-
-
-/* =====================================================
-   AVATAR CLASS HELPER
-===================================================== */
-
-function getAvatarClass(letter) {
-
-    const map = {
-
-        A: "one",
-        M: "two",
-        Y: "three",
-        O: "four"
-
-    };
-
-
-    return map[letter] || "five";
 
 }
 
@@ -1161,7 +1450,11 @@ function setupCardInteractions() {
     cards.forEach(card => {
 
         let startX = 0;
+
+        let startY = 0;
+
         let currentX = 0;
+
         let dragging = false;
 
 
@@ -1186,6 +1479,11 @@ function setupCardInteractions() {
 
                 startX =
                     event.clientX;
+
+                startY =
+                    event.clientY;
+
+                currentX = 0;
 
 
                 card.style.transition =
@@ -1214,8 +1512,12 @@ function setupCardInteractions() {
                     startX;
 
 
-                if (currentX < 0) {
+                if (
+                    currentX < 0
+                ) {
+
                     currentX = 0;
+
                 }
 
 
@@ -1228,12 +1530,8 @@ function setupCardInteractions() {
 
                 card.style.transform =
                     `
-                    translateX(
-                        ${currentX}px
-                    )
-                    rotate(
-                        ${rotation}deg
-                    )
+                    translateX(${currentX}px)
+                    rotate(${rotation}deg)
                     `;
 
             }
@@ -1242,7 +1540,7 @@ function setupCardInteractions() {
 
         card.addEventListener(
             "pointerup",
-            () => {
+            event => {
 
                 if (!dragging) {
                     return;
@@ -1252,11 +1550,22 @@ function setupCardInteractions() {
                 dragging = false;
 
 
+                try {
+
+                    card.releasePointerCapture(
+                        event.pointerId
+                    );
+
+                } catch {}
+
+
                 card.style.transition =
                     "";
 
 
-                if (currentX > 120) {
+                if (
+                    currentX > 120
+                ) {
 
                     swipeCard(card);
 
@@ -1293,6 +1602,9 @@ function setupCardInteractions() {
 
                 dragging = false;
 
+                card.style.transition =
+                    "";
+
                 card.style.transform =
                     "";
 
@@ -1321,31 +1633,57 @@ function setupCardInteractions() {
 
                     const index =
                         Number(
-                            button.dataset
-                                .index
+                            button.dataset.index
                         );
 
 
                     if (
-                        button.classList
-                            .contains("liked")
+                        !Number.isInteger(
+                            index
+                        ) ||
+                        !instants[index]
                     ) {
                         return;
                     }
 
 
-                    instants[index].likes++;
+                    /*
+                        Toggle like
+                    */
 
+                    if (
+                        button.classList.contains(
+                            "liked"
+                        )
+                    ) {
 
-                    button.classList.add(
-                        "liked"
-                    );
+                        instants[index]
+                            .likes--;
 
+                        button.classList.remove(
+                            "liked"
+                        );
 
-                    button.querySelector(
-                        "span"
-                    ).textContent =
-                        "♥";
+                        button.querySelector(
+                            "span"
+                        ).textContent =
+                            "♡";
+
+                    } else {
+
+                        instants[index]
+                            .likes++;
+
+                        button.classList.add(
+                            "liked"
+                        );
+
+                        button.querySelector(
+                            "span"
+                        ).textContent =
+                            "♥";
+
+                    }
 
 
                     button.querySelector(
@@ -1353,6 +1691,39 @@ function setupCardInteractions() {
                     ).textContent =
                         instants[index]
                             .likes;
+
+
+                    /*
+                        Save local likes
+                        for local Instants.
+                    */
+
+                    const instant =
+                        instants[index];
+
+
+                    if (
+                        instant.local
+                    ) {
+
+                        const stored =
+                            localInstants.find(
+                                item =>
+                                    item.id ===
+                                    instant.id
+                            );
+
+
+                        if (stored) {
+
+                            stored.likes =
+                                instant.likes;
+
+                            saveLocalInstants();
+
+                        }
+
+                    }
 
                 }
             );
@@ -1363,7 +1734,7 @@ function setupCardInteractions() {
 
 
 /* =====================================================
-   SWIPE CARD
+   SWIPE
 ===================================================== */
 
 function swipeCard(card) {
@@ -1386,7 +1757,6 @@ function swipeCard(card) {
             currentIndex =
                 instants.length;
 
-
             showFinishedState();
 
             return;
@@ -1406,6 +1776,10 @@ function swipeCard(card) {
 /* =====================================================
    PROGRESS
 ===================================================== */
+
+const currentInstant =
+    $("currentInstant");
+
 
 function updateProgress() {
 
@@ -1428,7 +1802,7 @@ function updateProgress() {
 
 
 /* =====================================================
-   FINISHED VIEW
+   FINISHED
 ===================================================== */
 
 function showFinishedState() {
@@ -1441,24 +1815,40 @@ function showFinishedState() {
     cardArea.innerHTML = `
 
         <div
-            class="finished-state"
+            style="
+                text-align:center;
+                color:#777;
+                padding:30px;
+            "
         >
 
             <div
-                class="finished-icon"
+                style="
+                    font-size:45px;
+                    margin-bottom:18px;
+                "
             >
                 ✦
             </div>
 
 
-            <h2>
+            <h2
+                style="
+                    color:white;
+                    margin-bottom:8px;
+                "
+            >
                 You're all caught up
             </h2>
 
 
-            <p>
-                No more Instants
-                from your friends.
+            <p
+                style="
+                    font-size:11px;
+                    line-height:1.6;
+                "
+            >
+                No more Instants from your friends.
             </p>
 
         </div>
@@ -1471,6 +1861,13 @@ function showFinishedState() {
 /* =====================================================
    OPEN INSTANTS
 ===================================================== */
+
+const openInstants =
+    $("openInstants");
+
+const instantCount =
+    $("instantCount");
+
 
 if (openInstants) {
 
@@ -1505,8 +1902,43 @@ if (instantCount) {
 
 
 /* =====================================================
+   HOME INSTANT COUNT
+===================================================== */
+
+function updateHomeInstantCount() {
+
+    if (!instantCount) {
+        return;
+    }
+
+
+    const count =
+        instants.length;
+
+
+    const countSpan =
+        instantCount.querySelector(
+            ".count-text span"
+        );
+
+
+    if (countSpan) {
+
+        countSpan.textContent =
+            `${count} Instants waiting`;
+
+    }
+
+}
+
+
+/* =====================================================
    REQUESTS
 ===================================================== */
+
+const requestsButton =
+    $("requestsButton");
+
 
 if (requestsButton) {
 
@@ -1566,10 +1998,8 @@ document
                     card.style.opacity =
                         "0";
 
-
                     card.style.transform =
                         "translateX(20px)";
-
 
                     card.style.transition =
                         ".3s ease";
@@ -1617,10 +2047,8 @@ document
                 card.style.opacity =
                     "0";
 
-
                 card.style.transform =
                     "translateX(-20px)";
-
 
                 card.style.transition =
                     ".3s ease";
@@ -1641,6 +2069,10 @@ document
 /* =====================================================
    FRIEND SEARCH
 ===================================================== */
+
+const friendSearch =
+    $("friendSearch");
+
 
 if (friendSearch) {
 
@@ -1700,10 +2132,9 @@ document
                     )
                     .forEach(item => {
 
-                        item.classList
-                            .remove(
-                                "active"
-                            );
+                        item.classList.remove(
+                            "active"
+                        );
 
                     });
 
@@ -1731,68 +2162,115 @@ document
 
 
 /* =====================================================
-   TOAST
+   PROFILE — LOCAL INSTANTS
 ===================================================== */
 
-function showToast(message) {
+function renderLocalProfile() {
 
-    let toast =
-        document.getElementById(
-            "nowToast"
+    const container =
+        document.querySelector(
+            ".my-instant-preview"
         );
 
 
-    if (!toast) {
-
-        toast =
-            document.createElement(
-                "div"
-            );
-
-
-        toast.id =
-            "nowToast";
-
-
-        toast.className =
-            "now-toast";
-
-
-        document.body.appendChild(
-            toast
-        );
-
+    if (!container) {
+        return;
     }
 
 
-    toast.textContent =
-        message;
+    /*
+        Keep the existing demo
+        placeholders if no local
+        Instants exist.
+    */
+
+    if (
+        localInstants.length === 0
+    ) {
+        return;
+    }
 
 
-    toast.classList.add(
-        "show"
-    );
+    container.innerHTML = "";
 
 
-    clearTimeout(
-        toast.hideTimer
-    );
+    localInstants.forEach(
+        instant => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
 
 
-    toast.hideTimer =
-        setTimeout(() => {
+            item.className =
+                "mini-instant";
 
-            toast.classList.remove(
-                "show"
+
+            item.innerHTML = `
+
+                <img
+                    src="${instant.image}"
+                    alt="Your Instant"
+                >
+
+            `;
+
+
+            container.appendChild(
+                item
             );
 
-        }, 2200);
+        }
+    );
 
 }
 
 
 /* =====================================================
-   CLEANUP
+   CAMERA UI INITIALIZATION
+===================================================== */
+
+buildCameraUI();
+
+
+/* =====================================================
+   INITIALIZE
+===================================================== */
+
+renderInstantCards();
+
+renderLocalProfile();
+
+updateHomeInstantCount();
+
+showScreen(
+    "homeScreen"
+);
+
+
+/* =====================================================
+   PAGE VISIBILITY
+===================================================== */
+
+document.addEventListener(
+    "visibilitychange",
+    () => {
+
+        if (
+            document.hidden
+        ) {
+
+            stopCamera();
+
+        }
+
+    }
+);
+
+
+/* =====================================================
+   BEFORE UNLOAD
 ===================================================== */
 
 window.addEventListener(
@@ -1803,12 +2281,3 @@ window.addEventListener(
 
     }
 );
-
-
-/* =====================================================
-   INITIALIZE
-===================================================== */
-
-renderInstantCards();
-
-showScreen("homeScreen");
