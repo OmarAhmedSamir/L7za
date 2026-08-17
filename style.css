@@ -1461,6 +1461,33 @@ h2 {
     white-space: nowrap;
 }
 
+.friend-action-button {
+    min-height: 32px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+
+    transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.friend-action-button.add, .friend-action-button.accept {
+    background: #fff;
+    color: #000;
+}
+
+.friend-action-button.friends {
+    background: rgba(255,255,255,.12);
+    color: #fff;
+}
+
+.friend-action-button.pending {
+    background: rgba(255,255,255,.05);
+    color: #888;
+}
+
 .request-actions {
 
     display: flex;
@@ -3200,8 +3227,3 @@ h2 {
         transition-duration: .01ms !important;
     }
 }
-
-
-/* =====================================================
-   END
-===================================================== */
