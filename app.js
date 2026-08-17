@@ -1,7 +1,1129 @@
 /* =====================================================
-   L7ZA — PHASE 2
-   REAL CAMERA + INSTANTS
+   L7ZA — PHASE 3
+   AUTH + PHASE 2 CAMERA
 ===================================================== */
+
+
+/* =====================================================
+   SUPABASE CONFIG
+===================================================== */
+
+const SUPABASE_URL =
+    "https://ogxbaalnebmmqxneypuy.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_ksfgbcVqNa6P8GRahVhDYA_KLK30bt7";
+
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* =====================================================
+   GLOBAL USER STATE
+===================================================== */
+
+let currentUser = null;
+
+let currentProfile = null;
+
+
+/* =====================================================
+   AUTH ELEMENTS
+===================================================== */
+
+const authScreen =
+    document.getElementById(
+        "authScreen"
+    );
+
+const mainApp =
+    document.getElementById(
+        "mainApp"
+    );
+
+const authTitle =
+    document.getElementById(
+        "authTitle"
+    );
+
+const authSubtitle =
+    document.getElementById(
+        "authSubtitle"
+    );
+
+const authSubmit =
+    document.getElementById(
+        "authSubmit"
+    );
+
+const authSwitch =
+    document.getElementById(
+        "authSwitch"
+    );
+
+const authMessage =
+    document.getElementById(
+        "authMessage"
+    );
+
+const authEmail =
+    document.getElementById(
+        "authEmail"
+    );
+
+const authPassword =
+    document.getElementById(
+        "authPassword"
+    );
+
+const authDisplayName =
+    document.getElementById(
+        "authDisplayName"
+    );
+
+const authUsername =
+    document.getElementById(
+        "authUsername"
+    );
+
+const signupFields =
+    document.querySelectorAll(
+        ".signup-only"
+    );
+
+
+let authMode = "login";
+
+
+/* =====================================================
+   AUTH UI
+===================================================== */
+
+function setAuthMode(mode) {
+
+    authMode = mode;
+
+
+    clearAuthMessage();
+
+
+    if (mode === "signup") {
+
+        authTitle.textContent =
+            "Create your account.";
+
+        authSubtitle.textContent =
+            "Join L7za and start sharing real moments.";
+
+        authSubmit.textContent =
+            "Create account";
+
+        authSwitch.innerHTML =
+            `
+                Already have an account?
+                <strong>Sign in</strong>
+            `;
+
+
+        signupFields.forEach(
+            field => {
+
+                field.style.display =
+                    "block";
+
+            }
+        );
+
+
+        authPassword.autocomplete =
+            "new-password";
+
+
+    } else {
+
+        authTitle.textContent =
+            "Welcome back.";
+
+        authSubtitle.textContent =
+            "Sign in to see what your friends are doing.";
+
+        authSubmit.textContent =
+            "Sign in";
+
+        authSwitch.innerHTML =
+            `
+                Don't have an account?
+                <strong>Sign up</strong>
+            `;
+
+
+        signupFields.forEach(
+            field => {
+
+                field.style.display =
+                    "none";
+
+            }
+        );
+
+
+        authPassword.autocomplete =
+            "current-password";
+
+    }
+
+}
+
+
+authSwitch.addEventListener(
+    "click",
+    () => {
+
+        setAuthMode(
+            authMode === "login"
+                ? "signup"
+                : "login"
+        );
+
+    }
+);
+
+
+/* =====================================================
+   AUTH MESSAGE
+===================================================== */
+
+function showAuthMessage(
+    message,
+    type = ""
+) {
+
+    authMessage.textContent =
+        message;
+
+    authMessage.className =
+        "auth-message";
+
+
+    if (type) {
+
+        authMessage.classList.add(
+            type
+        );
+
+    }
+
+}
+
+
+function clearAuthMessage() {
+
+    authMessage.textContent =
+        "";
+
+    authMessage.className =
+        "auth-message";
+
+}
+
+
+/* =====================================================
+   AUTH VALIDATION
+===================================================== */
+
+function validateUsername(
+    username
+) {
+
+    return /^[a-zA-Z0-9_]{3,24}$/
+        .test(username);
+
+}
+
+
+function validateSignup() {
+
+    const displayName =
+        authDisplayName.value.trim();
+
+    const username =
+        authUsername.value
+            .trim()
+            .toLowerCase();
+
+
+    if (!displayName) {
+
+        showAuthMessage(
+            "Please enter your name.",
+            "error"
+        );
+
+        return null;
+
+    }
+
+
+    if (
+        !validateUsername(
+            username
+        )
+    ) {
+
+        showAuthMessage(
+            "Username must be 3–24 characters using letters, numbers, or _.",
+            "error"
+        );
+
+        return null;
+
+    }
+
+
+    return {
+        displayName,
+        username
+    };
+
+}
+
+
+/* =====================================================
+   SIGN UP
+===================================================== */
+
+async function signUp() {
+
+    clearAuthMessage();
+
+
+    const signup =
+        validateSignup();
+
+
+    if (!signup) {
+
+        return;
+
+    }
+
+
+    const email =
+        authEmail.value
+            .trim()
+            .toLowerCase();
+
+    const password =
+        authPassword.value;
+
+
+    if (!email) {
+
+        showAuthMessage(
+            "Please enter your email.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        password.length < 6
+    ) {
+
+        showAuthMessage(
+            "Password must be at least 6 characters.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    setAuthLoading(true);
+
+
+    try {
+
+        /*
+            Check username first.
+        */
+
+        const {
+            data: existingProfile,
+            error: usernameError
+        } =
+            await supabaseClient
+                .from("profiles")
+                .select("id")
+                .eq(
+                    "username",
+                    signup.username
+                )
+                .maybeSingle();
+
+
+        if (usernameError) {
+
+            throw usernameError;
+
+        }
+
+
+        if (existingProfile) {
+
+            showAuthMessage(
+                "That username is already taken.",
+                "error"
+            );
+
+            setAuthLoading(false);
+
+            return;
+
+        }
+
+
+        /*
+            Create Auth account.
+        */
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient.auth
+                .signUp({
+
+                    email,
+
+                    password,
+
+                    options: {
+
+                        data: {
+
+                            username:
+                                signup.username,
+
+                            display_name:
+                                signup.displayName
+
+                        }
+
+                    }
+
+                });
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        /*
+            If email confirmation is enabled,
+            session may be null.
+        */
+
+        if (!data.session) {
+
+            showAuthMessage(
+                "Account created. Check your email to confirm your account.",
+                "success"
+            );
+
+
+            authPassword.value =
+                "";
+
+
+            setAuthLoading(false);
+
+            return;
+
+        }
+
+
+        currentUser =
+            data.user;
+
+
+        await loadCurrentProfile();
+
+
+        showMainApp();
+
+    } catch (error) {
+
+        console.error(
+            "Sign up error:",
+            error
+        );
+
+
+        showAuthMessage(
+            getAuthErrorMessage(error),
+            "error"
+        );
+
+    } finally {
+
+        setAuthLoading(false);
+
+    }
+
+}
+
+
+/* =====================================================
+   SIGN IN
+===================================================== */
+
+async function signIn() {
+
+    clearAuthMessage();
+
+
+    const email =
+        authEmail.value
+            .trim()
+            .toLowerCase();
+
+    const password =
+        authPassword.value;
+
+
+    if (!email || !password) {
+
+        showAuthMessage(
+            "Please enter your email and password.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    setAuthLoading(true);
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient.auth
+                .signInWithPassword({
+
+                    email,
+
+                    password
+
+                });
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        currentUser =
+            data.user;
+
+
+        await loadCurrentProfile();
+
+
+        showMainApp();
+
+    } catch (error) {
+
+        console.error(
+            "Sign in error:",
+            error
+        );
+
+
+        showAuthMessage(
+            getAuthErrorMessage(error),
+            "error"
+        );
+
+    } finally {
+
+        setAuthLoading(false);
+
+    }
+
+}
+
+
+/* =====================================================
+   AUTH SUBMIT
+===================================================== */
+
+authSubmit.addEventListener(
+    "click",
+    async () => {
+
+        if (
+            authMode === "signup"
+        ) {
+
+            await signUp();
+
+        } else {
+
+            await signIn();
+
+        }
+
+    }
+);
+
+
+/* =====================================================
+   ENTER KEY
+===================================================== */
+
+[
+    authEmail,
+    authPassword,
+    authDisplayName,
+    authUsername
+].forEach(
+    input => {
+
+        input.addEventListener(
+            "keydown",
+            event => {
+
+                if (
+                    event.key ===
+                    "Enter"
+                ) {
+
+                    authSubmit.click();
+
+                }
+
+            }
+        );
+
+    }
+);
+
+
+/* =====================================================
+   AUTH LOADING
+===================================================== */
+
+function setAuthLoading(
+    loading
+) {
+
+    authSubmit.disabled =
+        loading;
+
+
+    if (loading) {
+
+        authSubmit.textContent =
+            authMode === "signup"
+                ? "Creating account..."
+                : "Signing in...";
+
+    } else {
+
+        authSubmit.textContent =
+            authMode === "signup"
+                ? "Create account"
+                : "Sign in";
+
+    }
+
+}
+
+
+/* =====================================================
+   AUTH ERROR MESSAGE
+===================================================== */
+
+function getAuthErrorMessage(
+    error
+) {
+
+    const message =
+        error?.message ||
+        "";
+
+
+    if (
+        message
+            .toLowerCase()
+            .includes(
+                "invalid login credentials"
+            )
+    ) {
+
+        return "Incorrect email or password.";
+
+    }
+
+
+    if (
+        message
+            .toLowerCase()
+            .includes(
+                "email not confirmed"
+            )
+    ) {
+
+        return "Please confirm your email before signing in.";
+
+    }
+
+
+    if (
+        message
+            .toLowerCase()
+            .includes(
+                "user already registered"
+            )
+    ) {
+
+        return "An account with this email already exists.";
+
+    }
+
+
+    if (
+        message
+            .toLowerCase()
+            .includes(
+                "password should be at least"
+            )
+    ) {
+
+        return "Your password is too short.";
+
+    }
+
+
+    return message ||
+        "Something went wrong. Please try again.";
+
+}
+
+
+/* =====================================================
+   LOAD CURRENT PROFILE
+===================================================== */
+
+async function loadCurrentProfile() {
+
+    if (!currentUser) {
+
+        return;
+
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("profiles")
+            .select("*")
+            .eq(
+                "id",
+                currentUser.id
+            )
+            .maybeSingle();
+
+
+    if (error) {
+
+        console.error(
+            "Profile error:",
+            error
+        );
+
+        return;
+
+    }
+
+
+    currentProfile =
+        data;
+
+
+    /*
+        In the unlikely event the trigger
+        didn't create the profile yet,
+        create it manually.
+    */
+
+    if (!currentProfile) {
+
+        const metadata =
+            currentUser.user_metadata ||
+            {};
+
+
+        const username =
+            metadata.username ||
+            `user_${currentUser.id.slice(0, 8)}`;
+
+
+        const displayName =
+            metadata.display_name ||
+            "New User";
+
+
+        const {
+            data: createdProfile,
+            error: createError
+        } =
+            await supabaseClient
+                .from("profiles")
+                .insert({
+
+                    id:
+                        currentUser.id,
+
+                    username,
+
+                    display_name:
+                        displayName
+
+                })
+                .select()
+                .single();
+
+
+        if (createError) {
+
+            console.error(
+                "Create profile error:",
+                createError
+            );
+
+            return;
+
+        }
+
+
+        currentProfile =
+            createdProfile;
+
+    }
+
+
+    updateProfileUI();
+
+}
+
+
+/* =====================================================
+   PROFILE UI
+===================================================== */
+
+function updateProfileUI() {
+
+    if (!currentProfile) {
+
+        return;
+
+    }
+
+
+    const name =
+        currentProfile.display_name ||
+        "User";
+
+    const username =
+        currentProfile.username ||
+        "user";
+
+
+    const profileName =
+        document.getElementById(
+            "profileName"
+        );
+
+    const profileUsername =
+        document.getElementById(
+            "profileUsername"
+        );
+
+    const profileAvatar =
+        document.getElementById(
+            "profileAvatar"
+        );
+
+
+    if (profileName) {
+
+        profileName.textContent =
+            name;
+
+    }
+
+
+    if (profileUsername) {
+
+        profileUsername.textContent =
+            `@${username}`;
+
+    }
+
+
+    if (profileAvatar) {
+
+        profileAvatar.textContent =
+            name
+                .charAt(0)
+                .toUpperCase();
+
+    }
+
+}
+
+
+/* =====================================================
+   SHOW APP
+===================================================== */
+
+function showMainApp() {
+
+    authScreen.classList.add(
+        "hidden"
+    );
+
+    mainApp.classList.remove(
+        "hidden"
+    );
+
+
+    document.body.style.overflow =
+        "";
+
+
+    updateProfileUI();
+
+
+    showScreen(
+        "homeScreen"
+    );
+
+
+    /*
+        Keep Phase 2 behavior.
+    */
+
+    renderInstantCards();
+
+    updateHomeInstantCount();
+
+}
+
+
+/* =====================================================
+   SHOW AUTH
+===================================================== */
+
+function showAuth() {
+
+    stopCamera();
+
+
+    captureModal.classList.remove(
+        "show"
+    );
+
+    previewModal.classList.remove(
+        "show"
+    );
+
+
+    mainApp.classList.add(
+        "hidden"
+    );
+
+    authScreen.classList.remove(
+        "hidden"
+    );
+
+
+    document.body.style.overflow =
+        "";
+
+
+    setAuthMode(
+        "login"
+    );
+
+}
+
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+const logoutButton =
+    document.getElementById(
+        "logoutButton"
+    );
+
+
+logoutButton.addEventListener(
+    "click",
+    async () => {
+
+        try {
+
+            await supabaseClient.auth
+                .signOut();
+
+        } catch (error) {
+
+            console.error(
+                "Logout error:",
+                error
+            );
+
+        }
+
+
+        currentUser = null;
+
+        currentProfile = null;
+
+
+        showAuth();
+
+    }
+);
+
+
+/* =====================================================
+   AUTH SESSION
+===================================================== */
+
+async function initializeAuth() {
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient.auth
+                .getSession();
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        const session =
+            data.session;
+
+
+        if (session?.user) {
+
+            currentUser =
+                session.user;
+
+
+            await loadCurrentProfile();
+
+
+            showMainApp();
+
+        } else {
+
+            showAuth();
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Session error:",
+            error
+        );
+
+
+        showAuth();
+
+    }
+
+}
+
+
+/* =====================================================
+   AUTH STATE CHANGES
+===================================================== */
+
+supabaseClient.auth.onAuthStateChange(
+    async (
+        event,
+        session
+    ) => {
+
+        if (
+            event === "SIGNED_OUT"
+        ) {
+
+            currentUser = null;
+
+            currentProfile = null;
+
+            showAuth();
+
+            return;
+
+        }
+
+
+        if (
+            event === "SIGNED_IN" &&
+            session?.user
+        ) {
+
+            currentUser =
+                session.user;
+
+
+            await loadCurrentProfile();
+
+
+            showMainApp();
+
+        }
+
+    }
+);
 
 
 /* =====================================================
@@ -9,47 +1131,65 @@
 ===================================================== */
 
 const screens =
-    document.querySelectorAll(".screen");
+    document.querySelectorAll(
+        ".screen"
+    );
 
 const navItems =
-    document.querySelectorAll(".nav-item");
+    document.querySelectorAll(
+        ".nav-item"
+    );
 
 
 function showScreen(screenId) {
 
-    screens.forEach(screen => {
+    screens.forEach(
+        screen => {
 
-        screen.classList.remove("active");
+            screen.classList.remove(
+                "active"
+            );
 
-    });
+        }
+    );
 
 
     const target =
-        document.getElementById(screenId);
+        document.getElementById(
+            screenId
+        );
 
 
     if (target) {
 
-        target.classList.add("active");
+        target.classList.add(
+            "active"
+        );
 
     }
 
 
-    navItems.forEach(item => {
+    navItems.forEach(
+        item => {
 
-        item.classList.remove("active");
+            item.classList.remove(
+                "active"
+            );
 
 
-        if (
-            item.dataset.screen ===
-            screenId
-        ) {
+            if (
+                item.dataset.screen ===
+                screenId
+            ) {
 
-            item.classList.add("active");
+                item.classList.add(
+                    "active"
+                );
+
+            }
 
         }
-
-    });
+    );
 
 
     window.scrollTo({
@@ -60,26 +1200,30 @@ function showScreen(screenId) {
 }
 
 
-navItems.forEach(item => {
+navItems.forEach(
+    item => {
 
-    item.addEventListener(
-        "click",
-        () => {
+        item.addEventListener(
+            "click",
+            () => {
 
-            const screen =
-                item.dataset.screen;
+                const screen =
+                    item.dataset.screen;
 
 
-            if (screen) {
+                if (screen) {
 
-                showScreen(screen);
+                    showScreen(
+                        screen
+                    );
+
+                }
 
             }
+        );
 
-        }
-    );
-
-});
+    }
+);
 
 
 /* =====================================================
@@ -87,21 +1231,25 @@ navItems.forEach(item => {
 ===================================================== */
 
 document
-    .querySelectorAll(".back-button")
-    .forEach(button => {
+    .querySelectorAll(
+        ".back-button"
+    )
+    .forEach(
+        button => {
 
-        button.addEventListener(
-            "click",
-            () => {
+            button.addEventListener(
+                "click",
+                () => {
 
-                showScreen(
-                    button.dataset.back
-                );
+                    showScreen(
+                        button.dataset.back
+                    );
 
-            }
-        );
+                }
+            );
 
-    });
+        }
+    );
 
 
 /* =====================================================
@@ -186,6 +1334,20 @@ let cameraOpening = false;
 
 async function openCamera() {
 
+    /*
+        Safety:
+        camera can only open while authenticated.
+    */
+
+    if (!currentUser) {
+
+        showAuth();
+
+        return;
+
+    }
+
+
     if (cameraOpening) {
 
         return;
@@ -221,7 +1383,9 @@ async function openCamera() {
             error
         );
 
-        showCameraError(error);
+        showCameraError(
+            error
+        );
 
     } finally {
 
@@ -265,15 +1429,22 @@ async function startCamera() {
         video: {
 
             facingMode: {
-                ideal: cameraFacingMode
+
+                ideal:
+                    cameraFacingMode
+
             },
 
             width: {
+
                 ideal: 1920
+
             },
 
             height: {
+
                 ideal: 1080
+
             }
 
         }
@@ -312,17 +1483,19 @@ function stopCamera() {
 
     cameraStream
         .getTracks()
-        .forEach(track => {
+        .forEach(
+            track => {
 
-            track.stop();
+                track.stop();
 
-        });
+            }
+        );
 
 
     cameraStream = null;
 
-
-    cameraVideo.srcObject = null;
+    cameraVideo.srcObject =
+        null;
 
 }
 
@@ -406,10 +1579,6 @@ switchCamera.addEventListener(
                 error
             );
 
-            /*
-                Some desktop browsers
-                don't support camera switching.
-            */
 
             cameraFacingMode =
                 cameraFacingMode === "user"
@@ -439,7 +1608,9 @@ switchCamera.addEventListener(
    CAMERA ERROR
 ===================================================== */
 
-function showCameraError(error) {
+function showCameraError(
+    error
+) {
 
     cameraError.classList.add(
         "show"
@@ -505,12 +1676,39 @@ retryCamera.addEventListener(
 
         } catch (error) {
 
-            showCameraError(error);
+            showCameraError(
+                error
+            );
 
         }
 
     }
 );
+
+
+/* =====================================================
+   PREVIEW ELEMENTS
+===================================================== */
+
+const previewModal =
+    document.getElementById(
+        "previewModal"
+    );
+
+const capturedImage =
+    document.getElementById(
+        "capturedImage"
+    );
+
+const postInstantButton =
+    document.getElementById(
+        "postInstantButton"
+    );
+
+const discardButton =
+    document.getElementById(
+        "discardButton"
+    );
 
 
 /* =====================================================
@@ -554,11 +1752,6 @@ function capturePhoto() {
             "2d"
         );
 
-
-    /*
-        Mirror front camera so
-        selfie preview feels natural.
-    */
 
     if (
         cameraFacingMode === "user"
@@ -630,31 +1823,6 @@ function capturePhoto() {
 
 
 /* =====================================================
-   PREVIEW
-===================================================== */
-
-const previewModal =
-    document.getElementById(
-        "previewModal"
-    );
-
-const capturedImage =
-    document.getElementById(
-        "capturedImage"
-    );
-
-const postInstantButton =
-    document.getElementById(
-        "postInstantButton"
-    );
-
-const discardButton =
-    document.getElementById(
-        "discardButton"
-    );
-
-
-/* =====================================================
    DISCARD
 ===================================================== */
 
@@ -666,10 +1834,12 @@ discardButton.addEventListener(
 
 function discardPhoto() {
 
-    capturedImage.src = "";
+    capturedImage.src =
+        "";
 
     capturedImage.dataset.image =
         "";
+
 
     previewModal.classList.remove(
         "show"
@@ -683,109 +1853,8 @@ function discardPhoto() {
 
 
 /* =====================================================
-   POST REAL INSTANT
-===================================================== */
-
-postInstantButton.addEventListener(
-    "click",
-    postInstant
-);
-
-
-function postInstant() {
-
-    const image =
-        capturedImage.dataset.image;
-
-
-    if (!image) {
-
-        return;
-
-    }
-
-
-    const newInstant = {
-
-        id:
-            "local-" +
-            Date.now(),
-
-        name:
-            "Omar",
-
-        username:
-            "@omar",
-
-        avatar:
-            "O",
-
-        time:
-            "Just now",
-
-        caption:
-            "Just captured this moment.",
-
-        image:
-            image,
-
-        likes:
-            0,
-
-        seen:
-            0,
-
-        mine:
-            true
-
-    };
-
-
-    /*
-        Add newest Instant to the beginning.
-    */
-
-    instants.unshift(
-        newInstant
-    );
-
-
-    currentIndex = 0;
-
-
-    previewModal.classList.remove(
-        "show"
-    );
-
-
-    document.body.style.overflow =
-        "";
-
-
-    renderInstantCards();
-
-
-    updateHomeInstantCount();
-
-
-    updateMyInstantPreview();
-
-
-    showScreen(
-        "instantsScreen"
-    );
-
-
-    capturedImage.src = "";
-
-    capturedImage.dataset.image =
-        "";
-
-}
-
-
-/* =====================================================
-   INSTANT DATA
+   TEMPORARY INSTANT DATA
+   PHASE 3 STORAGE COMES NEXT
 ===================================================== */
 
 const instants = [
@@ -911,7 +1980,8 @@ const cardArea =
 
 function renderInstantCards() {
 
-    cardArea.innerHTML = "";
+    cardArea.innerHTML =
+        "";
 
 
     if (
@@ -925,20 +1995,11 @@ function renderInstantCards() {
     }
 
 
-    /*
-        Only render cards starting
-        from current index.
-    */
-
     const visibleInstants =
         instants.slice(
             currentIndex
         );
 
-
-    /*
-        Reverse for stacking.
-    */
 
     for (
         let i =
@@ -971,7 +2032,8 @@ function renderInstantCards() {
             actualIndex;
 
 
-        let photoHTML = "";
+        let photoHTML =
+            "";
 
 
         if (instant.image) {
@@ -1012,11 +2074,9 @@ function renderInstantCards() {
 
                         </div>
 
-
                         <p class="instant-caption">
                             ${instant.caption}
                         </p>
-
 
                         <div class="instant-actions">
 
@@ -1034,7 +2094,6 @@ function renderInstantCards() {
                                 </strong>
 
                             </button>
-
 
                             <span class="seen-text">
                                 👀 ${instant.seen} seen
@@ -1065,7 +2124,6 @@ function renderInstantCards() {
 
                     <div class="instant-gradient"></div>
 
-
                     <div class="instant-info">
 
                         <div class="instant-user">
@@ -1090,11 +2148,9 @@ function renderInstantCards() {
 
                         </div>
 
-
                         <p class="instant-caption">
                             ${instant.caption}
                         </p>
-
 
                         <div class="instant-actions">
 
@@ -1112,7 +2168,6 @@ function renderInstantCards() {
                                 </strong>
 
                             </button>
-
 
                             <span class="seen-text">
                                 👀 ${instant.seen} seen
@@ -1142,9 +2197,7 @@ function renderInstantCards() {
 
     setupCardInteractions();
 
-
     updateProgress();
-
 
     markCurrentInstantSeen();
 
@@ -1163,236 +2216,231 @@ function setupCardInteractions() {
         );
 
 
-    cards.forEach(card => {
+    cards.forEach(
+        card => {
 
-        let startX = 0;
+            let startX = 0;
 
-        let currentX = 0;
+            let currentX = 0;
 
-        let dragging = false;
+            let dragging = false;
 
 
-        card.addEventListener(
-            "pointerdown",
-            event => {
+            card.addEventListener(
+                "pointerdown",
+                event => {
 
-                const topCard =
-                    document.querySelector(
-                        ".instant-card"
+                    const topCard =
+                        document.querySelector(
+                            ".instant-card"
+                        );
+
+
+                    if (
+                        card !== topCard
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    dragging = true;
+
+                    startX =
+                        event.clientX;
+
+
+                    card.style.transition =
+                        "none";
+
+
+                    card.setPointerCapture(
+                        event.pointerId
                     );
 
+                }
+            );
 
-                if (
-                    card !== topCard
-                ) {
 
-                    return;
+            card.addEventListener(
+                "pointermove",
+                event => {
+
+                    if (!dragging) {
+
+                        return;
+
+                    }
+
+
+                    currentX =
+                        event.clientX -
+                        startX;
+
+
+                    if (
+                        currentX < 0
+                    ) {
+
+                        currentX = 0;
+
+                    }
+
+
+                    const rotation =
+                        Math.min(
+                            currentX / 12,
+                            12
+                        );
+
+
+                    card.style.transform =
+                        `
+                        translateX(${currentX}px)
+                        rotate(${rotation}deg)
+                        `;
 
                 }
+            );
 
 
-                dragging = true;
+            card.addEventListener(
+                "pointerup",
+                () => {
+
+                    if (!dragging) {
+
+                        return;
+
+                    }
 
 
-                startX =
-                    event.clientX;
+                    dragging = false;
 
 
-                card.style.transition =
-                    "none";
+                    card.style.transition =
+                        "";
 
 
-                card.setPointerCapture(
-                    event.pointerId
-                );
+                    if (
+                        currentX > 120
+                    ) {
 
-            }
-        );
+                        swipeCard(
+                            card
+                        );
 
+                    } else {
 
-        card.addEventListener(
-            "pointermove",
-            event => {
-
-                if (!dragging) {
-
-                    return;
-
-                }
+                        card.classList.add(
+                            "return-card"
+                        );
 
 
-                currentX =
-                    event.clientX -
-                    startX;
+                        setTimeout(
+                            () => {
 
+                                card.classList.remove(
+                                    "return-card"
+                                );
 
-                if (
-                    currentX < 0
-                ) {
+                                card.style.transform =
+                                    "";
+
+                            },
+                            350
+                        );
+
+                    }
+
 
                     currentX = 0;
 
                 }
+            );
 
 
-                const rotation =
-                    Math.min(
-                        currentX / 12,
-                        12
-                    );
+            card.addEventListener(
+                "pointercancel",
+                () => {
 
+                    dragging = false;
 
-                card.style.transform =
-                    `
-                    translateX(${currentX}px)
-                    rotate(${rotation}deg)
-                    `;
-
-            }
-        );
-
-
-        card.addEventListener(
-            "pointerup",
-            () => {
-
-                if (!dragging) {
-
-                    return;
+                    card.style.transform =
+                        "";
 
                 }
+            );
 
+        }
+    );
 
-                dragging = false;
-
-
-                card.style.transition =
-                    "";
-
-
-                if (
-                    currentX > 120
-                ) {
-
-                    swipeCard(
-                        card
-                    );
-
-                } else {
-
-                    card.classList.add(
-                        "return-card"
-                    );
-
-
-                    setTimeout(
-                        () => {
-
-                            card.classList.remove(
-                                "return-card"
-                            );
-
-                            card.style.transform =
-                                "";
-
-                        },
-                        350
-                    );
-
-                }
-
-
-                currentX = 0;
-
-            }
-        );
-
-
-        card.addEventListener(
-            "pointercancel",
-            () => {
-
-                dragging = false;
-
-                card.style.transform =
-                    "";
-
-            }
-        );
-
-    });
-
-
-    /*
-        Like buttons
-    */
 
     document
         .querySelectorAll(
             ".like-button"
         )
-        .forEach(button => {
+        .forEach(
+            button => {
 
-            button.addEventListener(
-                "click",
-                event => {
+                button.addEventListener(
+                    "click",
+                    event => {
 
-                    event.stopPropagation();
+                        event.stopPropagation();
 
 
-                    const index =
-                        Number(
-                            button.dataset.index
+                        const index =
+                            Number(
+                                button.dataset.index
+                            );
+
+
+                        if (
+                            !instants[index]
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        if (
+                            button.classList.contains(
+                                "liked"
+                            )
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        instants[index].likes++;
+
+
+                        button.classList.add(
+                            "liked"
                         );
 
 
-                    if (
-                        !instants[index]
-                    ) {
-
-                        return;
-
-                    }
+                        button.querySelector(
+                            "span"
+                        ).textContent =
+                            "♥";
 
 
-                    /*
-                        Prevent double-like.
-                    */
-
-                    if (
-                        button.classList.contains(
-                            "liked"
-                        )
-                    ) {
-
-                        return;
+                        button.querySelector(
+                            "strong"
+                        ).textContent =
+                            instants[index].likes;
 
                     }
+                );
 
-
-                    instants[index].likes++;
-
-
-                    button.classList.add(
-                        "liked"
-                    );
-
-
-                    button.querySelector(
-                        "span"
-                    ).textContent =
-                        "♥";
-
-
-                    button.querySelector(
-                        "strong"
-                    ).textContent =
-                        instants[index].likes;
-
-                }
-            );
-
-        });
+            }
+        );
 
 }
 
@@ -1425,9 +2473,7 @@ function swipeCard(card) {
 
                 showFinishedState();
 
-
                 updateProgress();
-
 
                 return;
 
@@ -1459,13 +2505,6 @@ const totalInstants =
 
 
 function updateProgress() {
-
-    if (!currentInstant) {
-
-        return;
-
-    }
-
 
     const total =
         instants.length;
@@ -1524,19 +2563,13 @@ function markCurrentInstantSeen() {
     }
 
 
-    /*
-        Demo only.
-        Supabase will handle this
-        in Phase 3.
-    */
-
     instants[currentIndex].seen++;
 
 }
 
 
 /* =====================================================
-   FINISHED STATE
+   FINISHED
 ===================================================== */
 
 function showFinishedState() {
@@ -1560,7 +2593,6 @@ function showFinishedState() {
                 ✦
             </div>
 
-
             <h2
                 style="
                     color:white;
@@ -1570,7 +2602,6 @@ function showFinishedState() {
                 You're all caught up
             </h2>
 
-
             <p
                 style="
                     font-size:11px;
@@ -1579,7 +2610,6 @@ function showFinishedState() {
             >
                 No more Instants from your friends.
             </p>
-
 
             <button
                 id="resetInstants"
@@ -1688,92 +2718,8 @@ const instantCountTitle =
 
 function updateHomeInstantCount() {
 
-    const count =
-        instants.length;
-
-
     instantCountTitle.textContent =
-        `${count} new Instants`;
-
-}
-
-
-/* =====================================================
-   MY PROFILE PREVIEW
-===================================================== */
-
-const myInstantPreview =
-    document.getElementById(
-        "myInstantPreview"
-    );
-
-const myInstantCount =
-    document.getElementById(
-        "myInstantCount"
-    );
-
-
-function updateMyInstantPreview() {
-
-    const mine =
-        instants.filter(
-            instant =>
-                instant.mine
-        );
-
-
-    if (
-        mine.length === 0
-    ) {
-
-        return;
-
-    }
-
-
-    mine.forEach(
-        instant => {
-
-            const wrapper =
-                document.createElement(
-                    "div"
-                );
-
-
-            wrapper.className =
-                "mini-instant";
-
-
-            wrapper.innerHTML = `
-
-                <img
-                    src="${instant.image}"
-                    alt="My Instant"
-                >
-
-                <small>
-                    Just now
-                </small>
-
-            `;
-
-
-            myInstantPreview.prepend(
-                wrapper
-            );
-
-        }
-    );
-
-
-    const current =
-        Number(
-            myInstantCount.textContent
-        );
-
-
-    myInstantCount.textContent =
-        current + mine.length;
+        `${instants.length} new Instants`;
 
 }
 
@@ -1798,117 +2744,6 @@ requestsButton.addEventListener(
 
     }
 );
-
-
-/* =====================================================
-   ACCEPT REQUEST
-===================================================== */
-
-document
-    .querySelectorAll(
-        ".accept-button"
-    )
-    .forEach(button => {
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                const card =
-                    button.closest(
-                        ".request-card"
-                    );
-
-
-                button.textContent =
-                    "Accepted ✓";
-
-
-                button.style.background =
-                    "#202020";
-
-
-                button.style.color =
-                    "white";
-
-
-                setTimeout(
-                    () => {
-
-                        card.style.opacity =
-                            "0";
-
-                        card.style.transform =
-                            "translateX(20px)";
-
-                        card.style.transition =
-                            ".3s ease";
-
-
-                        setTimeout(
-                            () => {
-
-                                card.remove();
-
-                            },
-                            300
-                        );
-
-                    },
-                    400
-                );
-
-            }
-        );
-
-    });
-
-
-/* =====================================================
-   DECLINE REQUEST
-===================================================== */
-
-document
-    .querySelectorAll(
-        ".decline-button"
-    )
-    .forEach(button => {
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                const card =
-                    button.closest(
-                        ".request-card"
-                    );
-
-
-                card.style.opacity =
-                    "0";
-
-
-                card.style.transform =
-                    "translateX(-20px)";
-
-
-                card.style.transition =
-                    ".3s ease";
-
-
-                setTimeout(
-                    () => {
-
-                        card.remove();
-
-                    },
-                    300
-                );
-
-            }
-        );
-
-    });
 
 
 /* =====================================================
@@ -1945,19 +2780,10 @@ friendSearch.addEventListener(
                         .toLowerCase();
 
 
-                if (
+                person.style.display =
                     text.includes(query)
-                ) {
-
-                    person.style.display =
-                        "flex";
-
-                } else {
-
-                    person.style.display =
-                        "none";
-
-                }
+                        ? "flex"
+                        : "none";
 
             }
         );
@@ -1974,45 +2800,47 @@ document
     .querySelectorAll(
         ".friend-tab"
     )
-    .forEach(tab => {
+    .forEach(
+        tab => {
 
-        tab.addEventListener(
-            "click",
-            () => {
+            tab.addEventListener(
+                "click",
+                () => {
 
-                document
-                    .querySelectorAll(
-                        ".friend-tab"
-                    )
-                    .forEach(
-                        item =>
-                            item.classList
-                                .remove(
-                                    "active"
-                                )
+                    document
+                        .querySelectorAll(
+                            ".friend-tab"
+                        )
+                        .forEach(
+                            item =>
+                                item.classList
+                                    .remove(
+                                        "active"
+                                    )
+                        );
+
+
+                    tab.classList.add(
+                        "active"
                     );
 
 
-                tab.classList.add(
-                    "active"
-                );
+                    if (
+                        tab.dataset.tab ===
+                        "requests"
+                    ) {
 
+                        showScreen(
+                            "requestsScreen"
+                        );
 
-                if (
-                    tab.dataset.tab ===
-                    "requests"
-                ) {
-
-                    showScreen(
-                        "requestsScreen"
-                    );
+                    }
 
                 }
+            );
 
-            }
-        );
-
-    });
+        }
+    );
 
 
 /* =====================================================
@@ -2024,32 +2852,35 @@ document.addEventListener(
     event => {
 
         if (
-            event.key ===
+            event.key !==
             "Escape"
         ) {
 
-            if (
-                previewModal.classList.contains(
-                    "show"
-                )
-            ) {
+            return;
 
-                discardPhoto();
-
-                return;
-
-            }
+        }
 
 
-            if (
-                captureModal.classList.contains(
-                    "show"
-                )
-            ) {
+        if (
+            previewModal.classList.contains(
+                "show"
+            )
+        ) {
 
-                closeCamera();
+            discardPhoto();
 
-            }
+            return;
+
+        }
+
+
+        if (
+            captureModal.classList.contains(
+                "show"
+            )
+        ) {
+
+            closeCamera();
 
         }
 
@@ -2081,10 +2912,9 @@ document.addEventListener(
    INITIALIZE
 ===================================================== */
 
-renderInstantCards();
-
-updateHomeInstantCount();
-
-showScreen(
-    "homeScreen"
+setAuthMode(
+    "login"
 );
+
+
+initializeAuth();
