@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
+    >
+
+    <meta
+        name="theme-color"
+        content="#080808"
+    >
+
+    <title>L7za — Real Moments</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+<div class="app">
+
+
+    <!-- =====================================================
+         AUTH
+    ====================================================== -->
+
+    <section
+        class="auth-screen"
+        id="authScreen"
+    >
+
+        <div class="auth-card">
+
+            <div class="auth-brand">
+                <span class="brand-dot"></span>
+                <span>L7za</span>
+            </div>
+
+            <div class="auth-heading">
+
+                <p class="eyebrow">
+                    REAL MOMENTS
+                </p>
+
+                <h1 id="authTitle">
+                    Welcome back.
+                </h1>
+
+                <p id="authSubtitle">
+                    Sign in to see what your friends are doing.
+                </p>
+
+            </div>
+
+
+            <div
+                class="auth-field signup-only"
+                id="displayNameField"
+            >
+
+                <label for="authDisplayName">
+                    Name
+                </label>
+
+                <input
+                    type="text"
+                    id="authDisplayName"
+                    placeholder="Your name"
+                    autocomplete="name"
+                >
+
+            </div>
+
+
+            <div
+                class="auth-field signup-only"
+                id="usernameField"
+            >
+
+                <label for="authUsername">
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    id="authUsername"
+                    placeholder="username"
+                    autocomplete="username"
+                    maxlength="24"
+                >
+
+            </div>
+
+
+            <div class="auth-field">
+
+                <label for="authEmail">
+                    Email
+                </label>
+
+                <input
+                    type="email"
+                    id="authEmail"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                >
+
+            </div>
+
+
+            <div class="auth-field">
+
+                <label for="authPassword">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="authPassword"
+                    placeholder="Your password"
+                    autocomplete="current-password"
+                >
+
+            </div>
+
+
+            <div
+                class="auth-message"
+                id="authMessage"
+            ></div>
+
+
+            <button
+                class="auth-submit"
+                id="authSubmit"
+            >
+                Sign in
+            </button>
+
+
+            <button
+                class="auth-switch"
+                id="authSwitch"
+            >
+                Don't have an account?
+                <strong>
+                    Sign up
+                </strong>
+            </button>
+
+
+            <p class="auth-note">
+                Your Instants are private to your account.
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         MAIN APPLICATION
+    ====================================================== -->
+
+    <div
+        id="mainApp"
+        class="main-app hidden"
+    >
+
+
+        <!-- TOP BAR -->
+
+        <header class="topbar">
+
+            <div class="brand">
+
+                <span class="brand-dot"></span>
+
+                <span>L7za</span>
+
+            </div>
+
+
+            <button
+                class="icon-button glass-button"
+                id="requestsButton"
+                aria-label="Friend requests"
+            >
+
+                <span class="bell-icon">
+                    ♡
+                </span>
+
+                <span
+                    class="notification-dot"
+                    id="notificationDot"
+                ></span>
+
+            </button>
+
+        </header>
+
+
+
+        <!-- MAIN CONTENT -->
+
+        <main class="main-content">
+
+
+            <!-- =================================================
+                 HOME
+            ================================================== -->
+
+            <section
+                class="screen active"
+                id="homeScreen"
+            >
+
+                <div class="home-heading">
+
+                    <div>
+
+                        <p class="eyebrow">
+                            TODAY
+                        </p>
+
+                        <h1>
+                            Capture the
+                            <span>moment.</span>
+                        </h1>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CAMERA CARD -->
+
+                <div
+                    class="camera-card"
+                    id="cameraCard"
+                >
+
+                    <div class="camera-background">
+
+                        <div class="camera-overlay"></div>
+
+                        <div class="camera-content">
+
+                            <div class="camera-small-icon">
+                                <span>✦</span>
+                            </div>
+
+                            <h2>
+                                Take an Instant
+                            </h2>
+
+                            <p>
+                                Camera only.
+                                <br>
+                                No filters. No retakes.
+                            </p>
+
+                            <button
+                                class="capture-button"
+                                id="captureButton"
+                                aria-label="Open camera"
+                            >
+                                <span></span>
+                            </button>
+
+                            <small>
+                                Tap to capture
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- FRIENDS -->
+
+                <div class="section-header">
+
+                    <div>
+
+                        <p class="eyebrow">
+                            FRIENDS
+                        </p>
+
+                        <h2>
+                            Your Instants
+                        </h2>
+
+                    </div>
+
+                    <button
+                        class="see-all"
+                        id="openInstants"
+                    >
+                        See all
+                    </button>
+
+                </div>
+
+
+                <!--
+                    IMPORTANT:
+                    No fake users here.
+                    JS fills this from Supabase.
+                -->
+
+                <div
+                    class="friends-strip glass-strip"
+                    id="friendsStrip"
+                ></div>
+
+
+                <button
+                    class="instant-count glass-panel"
+                    id="instantCount"
+                >
+
+                    <div class="count-icon">
+                        ✦
+                    </div>
+
+                    <div class="count-text">
+
+                        <strong id="instantCountTitle">
+                            0 new Instants
+                        </strong>
+
+                        <span>
+                            See what your friends are doing
+                        </span>
+
+                    </div>
+
+                    <span class="arrow">
+                        →
+                    </span>
+
+                </button>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 INSTANTS
+            ================================================== -->
+
+            <section
+                class="screen"
+                id="instantsScreen"
+            >
+
+                <div class="screen-header instants-header">
+
+                    <button
+                        class="back-button"
+                        data-back="homeScreen"
+                    >
+                        ←
+                    </button>
+
+                    <div class="instants-title">
+
+                        <p class="eyebrow">
+                            MOMENTS
+                        </p>
+
+                        <h1>
+                            Instants
+                        </h1>
+
+                    </div>
+
+                    <div class="progress-count">
+
+                        <span id="currentInstant">
+                            0
+                        </span>
+
+                        /
+
+                        <span id="totalInstants">
+                            0
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="card-area"
+                    id="cardArea"
+                ></div>
+
+
+                <div class="viewer-hint">
+
+                    <span>
+                        ←
+                    </span>
+
+                    <p>
+                        Swipe right to see the next Instant
+                    </p>
+
+                    <span>
+                        →
+                    </span>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 FRIENDS
+            ================================================== -->
+
+            <section
+                class="screen"
+                id="friendsScreen"
+            >
+
+                <div class="screen-title">
+
+                    <p class="eyebrow">
+                        SOCIAL
+                    </p>
+
+                    <h1>
+                        Friends
+                    </h1>
+
+                </div>
+
+
+                <div class="search-box liquid-glass">
+
+                    <span>
+                        ⌕
+                    </span>
+
+                    <input
+                        type="text"
+                        id="friendSearch"
+                        placeholder="Search people..."
+                        autocomplete="off"
+                    >
+
+                </div>
+
+
+                <div class="friend-tabs glass-tabs">
+
+                    <button
+                        class="friend-tab active"
+                        data-tab="friends"
+                    >
+                        Friends
+                    </button>
+
+                    <button
+                        class="friend-tab"
+                        data-tab="requests"
+                    >
+                        Requests
+
+                        <span
+                            class="tab-badge"
+                            id="requestBadge"
+                        >
+                            0
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="friendsList"
+                    class="people-list"
+                ></div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 REQUESTS
+            ================================================== -->
+
+            <section
+                class="screen"
+                id="requestsScreen"
+            >
+
+                <div class="screen-header">
+
+                    <button
+                        class="back-button"
+                        data-back="friendsScreen"
+                    >
+                        ←
+                    </button>
+
+                    <div>
+
+                        <p class="eyebrow">
+                            SOCIAL
+                        </p>
+
+                        <h1>
+                            Requests
+                        </h1>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="requests-list"
+                    id="requestsList"
+                ></div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 PROFILE
+            ================================================== -->
+
+            <section
+                class="screen"
+                id="profileScreen"
+            >
+
+                <div class="profile-top">
+
+                    <button
+                        class="settings-button"
+                        id="logoutButton"
+                        aria-label="Sign out"
+                    >
+                        ↪
+                    </button>
+
+                </div>
+
+
+                <div class="profile-header">
+
+                    <div
+                        class="profile-avatar"
+                        id="profileAvatar"
+                    >
+                        O
+                    </div>
+
+                    <h1 id="profileName">
+                        Omar
+                    </h1>
+
+                    <p id="profileUsername">
+                        @omar
+                    </p>
+
+
+                    <div class="profile-stats">
+
+                        <div>
+
+                            <strong id="friendCount">
+                                0
+                            </strong>
+
+                            <span>
+                                Friends
+                            </span>
+
+                        </div>
+
+
+                        <div>
+
+                            <strong id="myInstantCount">
+                                0
+                            </strong>
+
+                            <span>
+                                Instants
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="edit-profile-button"
+                        id="editProfileButton"
+                    >
+                        Edit profile
+                    </button>
+
+                </div>
+
+
+                <div class="profile-section">
+
+                    <div class="section-header">
+
+                        <div>
+
+                            <p class="eyebrow">
+                                YOUR MOMENTS
+                            </p>
+
+                            <h2>
+                                My Instants
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="my-instant-preview"
+                        id="myInstantPreview"
+                    ></div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+
+
+        <!-- =====================================================
+             BOTTOM NAVIGATION
+        ====================================================== -->
+
+        <nav class="bottom-nav">
+
+            <button
+                class="nav-item active"
+                data-screen="homeScreen"
+            >
+
+                <span class="nav-icon">
+                    ⌂
+                </span>
+
+                <span>
+                    Home
+                </span>
+
+            </button>
+
+
+            <button
+                class="nav-item"
+                data-screen="instantsScreen"
+            >
+
+                <span class="nav-icon">
+                    ✦
+                </span>
+
+                <span>
+                    Instants
+                </span>
+
+            </button>
+
+
+            <button
+                class="nav-camera"
+                id="navCamera"
+                aria-label="Open camera"
+            >
+
+                <span>
+                    +
+                </span>
+
+            </button>
+
+
+            <button
+                class="nav-item"
+                data-screen="friendsScreen"
+            >
+
+                <span class="nav-icon">
+                    ♧
+                </span>
+
+                <span>
+                    Friends
+                </span>
+
+            </button>
+
+
+            <button
+                class="nav-item"
+                data-screen="profileScreen"
+            >
+
+                <span class="nav-icon">
+                    ○
+                </span>
+
+                <span>
+                    Profile
+                </span>
+
+            </button>
+
+        </nav>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         REAL CAMERA MODAL
+    ====================================================== -->
+
+    <div
+        class="modal camera-modal"
+        id="captureModal"
+    >
+
+        <div class="real-camera">
+
+            <video
+                id="cameraVideo"
+                autoplay
+                playsinline
+                muted
+            ></video>
+
+            <canvas
+                id="cameraCanvas"
+            ></canvas>
+
+
+            <!-- TOP -->
+
+            <div class="camera-top-controls">
+
+                <button
+                    class="camera-control"
+                    id="closeCapture"
+                >
+                    ×
+                </button>
+
+                <div class="camera-mode">
+                    L7za
+                </div>
+
+                <button
+                    class="camera-control"
+                    id="switchCamera"
+                    aria-label="Switch camera"
+                >
+                    ↻
+                </button>
+
+            </div>
+
+
+            <!-- CAMERA GUIDES -->
+
+            <div class="camera-guides">
+
+                <div class="guide-corner top-left"></div>
+                <div class="guide-corner top-right"></div>
+                <div class="guide-corner bottom-left"></div>
+                <div class="guide-corner bottom-right"></div>
+
+            </div>
+
+
+            <!-- CAMERA ERROR -->
+
+            <div
+                class="camera-error"
+                id="cameraError"
+            >
+
+                <div class="camera-error-icon">
+                    📷
+                </div>
+
+                <h2>
+                    Camera unavailable
+                </h2>
+
+                <p id="cameraErrorText">
+                    Please allow camera access to take an Instant.
+                </p>
+
+                <button
+                    class="retry-camera"
+                    id="retryCamera"
+                >
+                    Try again
+                </button>
+
+            </div>
+
+
+            <!-- CAMERA BOTTOM -->
+
+            <div class="camera-bottom-controls">
+
+                <div class="camera-bottom-side">
+
+                    <button
+                        class="camera-secondary-button"
+                        id="cameraLensButton"
+                        type="button"
+                    >
+                        Lens
+                    </button>
+
+                </div>
+
+
+                <button
+                    class="real-capture-button"
+                    id="realCaptureButton"
+                    aria-label="Take photo"
+                >
+
+                    <span></span>
+
+                </button>
+
+
+                <div class="camera-bottom-side">
+
+                    <button
+                        class="camera-close-text"
+                        id="cancelCamera"
+                    >
+                        Cancel
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- LENS PANEL -->
+
+            <div
+                class="camera-lens-panel liquid-glass"
+                id="cameraLensPanel"
+            >
+
+                <div class="camera-panel-title">
+                    Camera
+                </div>
+
+                <div
+                    class="lens-options"
+                    id="lensOptions"
+                ></div>
+
+            </div>
+
+
+            <!-- FILTERS -->
+
+            <div class="camera-filters-wrap">
+
+                <div class="camera-filters-label">
+                    FILTER
+                </div>
+
+                <div
+                    class="camera-filters"
+                    id="cameraFilters"
+                >
+
+                    <button
+                        class="filter-chip active"
+                        data-filter="original"
+                    >
+                        <span class="filter-preview filter-original"></span>
+                        Original
+                    </button>
+
+
+                    <button
+                        class="filter-chip"
+                        data-filter="mono"
+                    >
+                        <span class="filter-preview filter-mono"></span>
+                        Mono
+                    </button>
+
+
+                    <button
+                        class="filter-chip"
+                        data-filter="fade"
+                    >
+                        <span class="filter-preview filter-fade"></span>
+                        Fade
+                    </button>
+
+
+                    <button
+                        class="filter-chip"
+                        data-filter="warm"
+                    >
+                        <span class="filter-preview filter-warm"></span>
+                        Warm
+                    </button>
+
+
+                    <button
+                        class="filter-chip"
+                        data-filter="cool"
+                    >
+                        <span class="filter-preview filter-cool"></span>
+                        Cool
+                    </button>
+
+
+                    <button
+                        class="filter-chip"
+                        data-filter="noir"
+                    >
+                        <span class="filter-preview filter-noir"></span>
+                        Noir
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         PREVIEW MODAL
+    ====================================================== -->
+
+    <div
+        class="modal preview-modal"
+        id="previewModal"
+    >
+
+        <div class="preview-content">
+
+            <div class="preview-image-wrapper">
+
+                <img
+                    id="capturedImage"
+                    alt="Captured Instant"
+                >
+
+            </div>
+
+
+            <div class="preview-bottom">
+
+                <p class="preview-title">
+                    Your Instant
+                </p>
+
+                <p class="preview-subtitle">
+                    This moment can't be retaken.
+                </p>
+
+                <button
+                    class="post-instant-button"
+                    id="postInstantButton"
+                >
+                    Post Instant
+                </button>
+
+                <button
+                    class="discard-button"
+                    id="discardButton"
+                >
+                    Discard
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         EDIT PROFILE MODAL
+    ====================================================== -->
+
+    <div
+        class="modal edit-profile-modal"
+        id="editProfileModal"
+    >
+
+        <div class="edit-profile-card liquid-glass">
+
+            <div class="edit-profile-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        PROFILE
+                    </p>
+
+                    <h2>
+                        Edit profile
+                    </h2>
+
+                </div>
+
+                <button
+                    class="modal-close-button"
+                    id="closeEditProfile"
+                    type="button"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="edit-profile-form">
+
+                <div class="auth-field">
+
+                    <label for="editDisplayName">
+                        Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editDisplayName"
+                        maxlength="50"
+                        autocomplete="name"
+                    >
+
+                </div>
+
+
+                <div class="auth-field">
+
+                    <label for="editUsername">
+                        Username
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editUsername"
+                        maxlength="24"
+                        autocomplete="username"
+                    >
+
+                </div>
+
+
+                <div
+                    class="edit-profile-message"
+                    id="editProfileMessage"
+                ></div>
+
+
+                <button
+                    class="save-profile-button"
+                    id="saveProfileButton"
+                    type="button"
+                >
+                    Save changes
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         SUPABASE
+    ====================================================== -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
+    <script src="app.js"></script>
+
+</div>
+
+</body>
+
+</html>
