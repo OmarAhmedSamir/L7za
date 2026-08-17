@@ -1,22 +1,21 @@
 /* =====================================================
    L7ZA — PHASE 4
-   AUTH + CAMERA + REAL INSTANTS + ONE-TIME VIEW
+   COMPLETE VERSION
 
-   FEATURES
-   -----------------------------------------------------
-   - Authentication
-   - Profiles
-   - Camera
-   - Post Instants
-   - 24-hour expiration
-   - Storage signed URLs
-   - One-time viewing per user
-   - Persistent instant views in Supabase
-   - Independent My Instants
-   - Correct UUID handling
-   - Card stacking
-   - Mobile / desktop swipe
-   - Profile grid
+   AUTH
+   PROFILES
+   CAMERA
+   REAL INSTANTS
+   24-HOUR EXPIRATION
+   STORAGE SIGNED URLS
+   ONE-TIME VIEW
+   REAL VIEWS
+   REAL LIKES
+   FRIENDSHIPS
+   MY INSTANTS
+   CARD STACKING
+   SWIPE
+   PROFILE GRID
 ===================================================== */
 
 
@@ -51,6 +50,14 @@ let currentIndex = 0;
 
 let loadingInstants = false;
 let loadingMyInstants = false;
+
+let loadingFriends = false;
+
+let friends = [];
+let friendRequests = [];
+let sentFriendRequests = [];
+
+let currentFriendSearch = "";
 
 
 /* =====================================================
@@ -124,7 +131,10 @@ function setAuthMode(mode) {
             `;
 
         signupFields.forEach(field => {
-            field.style.display = "block";
+
+            field.style.display =
+                "block";
+
         });
 
         authPassword.autocomplete =
@@ -148,12 +158,17 @@ function setAuthMode(mode) {
             `;
 
         signupFields.forEach(field => {
-            field.style.display = "none";
+
+            field.style.display =
+                "none";
+
         });
 
         authPassword.autocomplete =
             "current-password";
+
     }
+
 }
 
 
@@ -195,7 +210,11 @@ function showAuthMessage(
         "auth-message";
 
     if (type) {
-        authMessage.classList.add(type);
+
+        authMessage.classList.add(
+            type
+        );
+
     }
 
 }
@@ -246,6 +265,7 @@ function validateSignup() {
         );
 
         return null;
+
     }
 
     if (!validateUsername(username)) {
@@ -256,11 +276,14 @@ function validateSignup() {
         );
 
         return null;
+
     }
 
     return {
+
         displayName,
         username
+
     };
 
 }
@@ -297,6 +320,7 @@ async function signUp() {
         );
 
         return;
+
     }
 
     if (password.length < 6) {
@@ -307,6 +331,7 @@ async function signUp() {
         );
 
         return;
+
     }
 
     setAuthLoading(true);
@@ -338,6 +363,7 @@ async function signUp() {
             );
 
             return;
+
         }
 
         const {
@@ -379,6 +405,7 @@ async function signUp() {
             authPassword.value = "";
 
             return;
+
         }
 
         currentUser =
@@ -433,6 +460,7 @@ async function signIn() {
         );
 
         return;
+
     }
 
     setAuthLoading(true);
@@ -529,8 +557,13 @@ if (authSubmit) {
         "keydown",
         event => {
 
-            if (event.key === "Enter") {
+            if (
+                event.key ===
+                "Enter"
+            ) {
+
                 authSubmit.click();
+
             }
 
         }
@@ -662,6 +695,7 @@ async function loadCurrentProfile() {
         );
 
         return;
+
     }
 
     currentProfile =
@@ -670,7 +704,8 @@ async function loadCurrentProfile() {
     if (!currentProfile) {
 
         const metadata =
-            currentUser.user_metadata || {};
+            currentUser.user_metadata ||
+            {};
 
         const username =
             metadata.username ||
@@ -708,10 +743,12 @@ async function loadCurrentProfile() {
             );
 
             return;
+
         }
 
         currentProfile =
             createdProfile;
+
     }
 
     updateProfileUI();
@@ -753,8 +790,10 @@ function updateProfileUI() {
         );
 
     if (profileName) {
+
         profileName.textContent =
             name;
+
     }
 
     if (profileUsername) {
@@ -783,24 +822,37 @@ function updateProfileUI() {
 async function showMainApp() {
 
     if (authScreen) {
-        authScreen.classList.add("hidden");
+
+        authScreen.classList.add(
+            "hidden"
+        );
+
     }
 
     if (mainApp) {
-        mainApp.classList.remove("hidden");
+
+        mainApp.classList.remove(
+            "hidden"
+        );
+
     }
 
-    document.body.style.overflow = "";
+    document.body.style.overflow =
+        "";
 
     updateProfileUI();
 
-    showScreen("homeScreen");
+    showScreen(
+        "homeScreen"
+    );
 
     await Promise.allSettled([
 
         loadInstants(),
 
-        loadMyInstants()
+        loadMyInstants(),
+
+        loadFriendData()
 
     ]);
 
@@ -816,24 +868,43 @@ function showAuth() {
     stopCamera();
 
     if (captureModal) {
-        captureModal.classList.remove("show");
+
+        captureModal.classList.remove(
+            "show"
+        );
+
     }
 
     if (previewModal) {
-        previewModal.classList.remove("show");
+
+        previewModal.classList.remove(
+            "show"
+        );
+
     }
 
     if (mainApp) {
-        mainApp.classList.add("hidden");
+
+        mainApp.classList.add(
+            "hidden"
+        );
+
     }
 
     if (authScreen) {
-        authScreen.classList.remove("hidden");
+
+        authScreen.classList.remove(
+            "hidden"
+        );
+
     }
 
-    document.body.style.overflow = "";
+    document.body.style.overflow =
+        "";
 
-    setAuthMode("login");
+    setAuthMode(
+        "login"
+    );
 
 }
 
@@ -867,15 +938,29 @@ if (logoutButton) {
 
             }
 
-            currentUser = null;
+            currentUser =
+                null;
 
-            currentProfile = null;
+            currentProfile =
+                null;
 
-            instants = [];
+            instants =
+                [];
 
-            myInstants = [];
+            myInstants =
+                [];
 
-            currentIndex = 0;
+            friends =
+                [];
+
+            friendRequests =
+                [];
+
+            sentFriendRequests =
+                [];
+
+            currentIndex =
+                0;
 
             showAuth();
 
@@ -946,17 +1031,34 @@ supabaseClient.auth.onAuthStateChange(
         session
     ) => {
 
-        if (event === "SIGNED_OUT") {
+        if (
+            event ===
+            "SIGNED_OUT"
+        ) {
 
-            currentUser = null;
+            currentUser =
+                null;
 
-            currentProfile = null;
+            currentProfile =
+                null;
 
-            instants = [];
+            instants =
+                [];
 
-            myInstants = [];
+            myInstants =
+                [];
 
-            currentIndex = 0;
+            friends =
+                [];
+
+            friendRequests =
+                [];
+
+            sentFriendRequests =
+                [];
+
+            currentIndex =
+                0;
 
             showAuth();
 
@@ -965,7 +1067,8 @@ supabaseClient.auth.onAuthStateChange(
         }
 
         if (
-            event === "SIGNED_IN" &&
+            event ===
+            "SIGNED_IN" &&
             session?.user
         ) {
 
@@ -999,13 +1102,15 @@ const navItems =
 
 function showScreen(screenId) {
 
-    screens.forEach(screen => {
+    screens.forEach(
+        screen => {
 
-        screen.classList.remove(
-            "active"
-        );
+            screen.classList.remove(
+                "active"
+            );
 
-    });
+        }
+    );
 
     const target =
         document.getElementById(
@@ -1020,28 +1125,33 @@ function showScreen(screenId) {
 
     }
 
-    navItems.forEach(item => {
+    navItems.forEach(
+        item => {
 
-        item.classList.remove(
-            "active"
-        );
-
-        if (
-            item.dataset.screen ===
-            screenId
-        ) {
-
-            item.classList.add(
+            item.classList.remove(
                 "active"
             );
 
-        }
+            if (
+                item.dataset.screen ===
+                screenId
+            ) {
 
-    });
+                item.classList.add(
+                    "active"
+                );
+
+            }
+
+        }
+    );
 
     window.scrollTo({
+
         top: 0,
+
         behavior: "auto"
+
     });
 
 }
@@ -1051,23 +1161,29 @@ function showScreen(screenId) {
    NAVIGATION
 ===================================================== */
 
-navItems.forEach(item => {
+navItems.forEach(
+    item => {
 
-    item.addEventListener(
-        "click",
-        () => {
+        item.addEventListener(
+            "click",
+            () => {
 
-            const screen =
-                item.dataset.screen;
+                const screen =
+                    item.dataset.screen;
 
-            if (screen) {
-                showScreen(screen);
+                if (screen) {
+
+                    showScreen(
+                        screen
+                    );
+
+                }
+
             }
+        );
 
-        }
-    );
-
-});
+    }
+);
 
 
 /* =====================================================
@@ -1075,21 +1191,25 @@ navItems.forEach(item => {
 ===================================================== */
 
 document
-    .querySelectorAll(".back-button")
-    .forEach(button => {
+    .querySelectorAll(
+        ".back-button"
+    )
+    .forEach(
+        button => {
 
-        button.addEventListener(
-            "click",
-            () => {
+            button.addEventListener(
+                "click",
+                () => {
 
-                showScreen(
-                    button.dataset.back
-                );
+                    showScreen(
+                        button.dataset.back
+                    );
 
-            }
-        );
+                }
+            );
 
-    });
+        }
+    );
 
 
 /* =====================================================
@@ -1161,12 +1281,14 @@ const cameraErrorText =
    CAMERA STATE
 ===================================================== */
 
-let cameraStream = null;
+let cameraStream =
+    null;
 
 let cameraFacingMode =
     "user";
 
-let cameraOpening = false;
+let cameraOpening =
+    false;
 
 
 /* =====================================================
@@ -1180,13 +1302,15 @@ async function openCamera() {
         showAuth();
 
         return;
+
     }
 
     if (cameraOpening) {
         return;
     }
 
-    cameraOpening = true;
+    cameraOpening =
+        true;
 
     captureModal.classList.add(
         "show"
@@ -1210,11 +1334,14 @@ async function openCamera() {
             error
         );
 
-        showCameraError(error);
+        showCameraError(
+            error
+        );
 
     } finally {
 
-        cameraOpening = false;
+        cameraOpening =
+            false;
 
     }
 
@@ -1251,16 +1378,24 @@ async function startCamera() {
         video: {
 
             facingMode: {
+
                 ideal:
                     cameraFacingMode
+
             },
 
             width: {
-                ideal: 1920
+
+                ideal:
+                    1920
+
             },
 
             height: {
-                ideal: 1080
+
+                ideal:
+                    1080
+
             }
 
         }
@@ -1293,16 +1428,22 @@ function stopCamera() {
 
     cameraStream
         .getTracks()
-        .forEach(track => {
+        .forEach(
+            track => {
 
-            track.stop();
+                track.stop();
 
-        });
+            }
+        );
 
-    cameraStream = null;
+    cameraStream =
+        null;
 
     if (cameraVideo) {
-        cameraVideo.srcObject = null;
+
+        cameraVideo.srcObject =
+            null;
+
     }
 
 }
@@ -1388,7 +1529,8 @@ if (switchCamera) {
                 cameraFacingMode;
 
             cameraFacingMode =
-                cameraFacingMode === "user"
+                cameraFacingMode ===
+                "user"
                     ? "environment"
                     : "user";
 
@@ -1398,7 +1540,9 @@ if (switchCamera) {
 
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    error
+                );
 
                 cameraFacingMode =
                     previousMode;
@@ -1407,7 +1551,9 @@ if (switchCamera) {
 
                     await startCamera();
 
-                } catch (secondError) {
+                } catch (
+                    secondError
+                ) {
 
                     showCameraError(
                         secondError
@@ -1427,7 +1573,9 @@ if (switchCamera) {
    CAMERA ERROR
 ===================================================== */
 
-function showCameraError(error) {
+function showCameraError(
+    error
+) {
 
     cameraError.classList.add(
         "show"
@@ -1547,6 +1695,7 @@ function capturePhoto() {
     ) {
 
         return;
+
     }
 
     const width =
@@ -1562,10 +1711,13 @@ function capturePhoto() {
         height;
 
     const context =
-        cameraCanvas.getContext("2d");
+        cameraCanvas.getContext(
+            "2d"
+        );
 
     if (
-        cameraFacingMode === "user"
+        cameraFacingMode ===
+        "user"
     ) {
 
         context.save();
@@ -1643,7 +1795,8 @@ if (discardButton) {
 
 function discardPhoto() {
 
-    capturedImage.src = "";
+    capturedImage.src =
+        "";
 
     capturedImage.dataset.image =
         "";
@@ -1679,6 +1832,7 @@ async function postInstant() {
         showAuth();
 
         return;
+
     }
 
     const imageData =
@@ -1697,7 +1851,9 @@ async function postInstant() {
     try {
 
         const response =
-            await fetch(imageData);
+            await fetch(
+                imageData
+            );
 
         const blob =
             await response.blob();
@@ -1735,7 +1891,10 @@ async function postInstant() {
         const expiresAt =
             new Date(
                 Date.now() +
-                24 * 60 * 60 * 1000
+                24 *
+                60 *
+                60 *
+                1000
             ).toISOString();
 
         const {
@@ -1775,9 +1934,16 @@ async function postInstant() {
                 ]);
 
             throw insertError;
+
         }
 
-        capturedImage.src = "";
+        console.log(
+            "Instant created:",
+            insertedInstant
+        );
+
+        capturedImage.src =
+            "";
 
         capturedImage.dataset.image =
             "";
@@ -1797,7 +1963,8 @@ async function postInstant() {
 
         ]);
 
-        currentIndex = 0;
+        currentIndex =
+            0;
 
         updateMyInstantCount();
 
@@ -1831,7 +1998,7 @@ async function postInstant() {
 
 
 /* =====================================================
-   GET ALREADY VIEWED INSTANT IDS
+   GET VIEWED INSTANT IDS
 ===================================================== */
 
 async function getViewedInstantIds() {
@@ -1866,7 +2033,8 @@ async function getViewedInstantIds() {
         .map(
             row =>
                 row.instant_id
-        );
+        )
+        .filter(Boolean);
 
     } catch (error) {
 
@@ -1883,7 +2051,7 @@ async function getViewedInstantIds() {
 
 
 /* =====================================================
-   MARK INSTANT AS VIEWED
+   MARK INSTANT VIEWED
 ===================================================== */
 
 async function markInstantViewed(
@@ -1917,8 +2085,10 @@ async function markInstantViewed(
 
                     },
                     {
+
                         onConflict:
                             "instant_id,viewer_id"
+
                     }
                 );
 
@@ -1943,6 +2113,345 @@ async function markInstantViewed(
 
 
 /* =====================================================
+   GET VIEW COUNTS
+===================================================== */
+
+async function getViewCounts(
+    instantIds
+) {
+
+    const counts =
+        new Map();
+
+    if (!instantIds.length) {
+        return counts;
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("instant_views")
+                .select(
+                    "instant_id"
+                )
+                .in(
+                    "instant_id",
+                    instantIds
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        (
+            data || []
+        ).forEach(
+            row => {
+
+                const id =
+                    row.instant_id;
+
+                counts.set(
+                    id,
+                    (
+                        counts.get(id) ||
+                        0
+                    ) + 1
+                );
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "View count error:",
+            error
+        );
+
+    }
+
+    return counts;
+
+}
+
+
+/* =====================================================
+   GET LIKE DATA
+===================================================== */
+
+async function getLikeData(
+    instantIds
+) {
+
+    const result = {
+
+        counts:
+            new Map(),
+
+        liked:
+            new Set()
+
+    };
+
+    if (!instantIds.length) {
+        return result;
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("instant_likes")
+                .select(
+                    "instant_id,user_id"
+                )
+                .in(
+                    "instant_id",
+                    instantIds
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        (
+            data || []
+        ).forEach(
+            row => {
+
+                result.counts.set(
+                    row.instant_id,
+                    (
+                        result.counts.get(
+                            row.instant_id
+                        ) ||
+                        0
+                    ) + 1
+                );
+
+                if (
+                    currentUser &&
+                    row.user_id ===
+                    currentUser.id
+                ) {
+
+                    result.liked.add(
+                        row.instant_id
+                    );
+
+                }
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Like data error:",
+            error
+        );
+
+    }
+
+    return result;
+
+}
+
+
+/* =====================================================
+   TOGGLE INSTANT LIKE
+===================================================== */
+
+async function toggleInstantLike(
+    instantId
+) {
+
+    if (
+        !currentUser ||
+        !instantId
+    ) {
+
+        return;
+
+    }
+
+    const instant =
+        instants.find(
+            item =>
+                item.id ===
+                instantId
+        );
+
+    if (!instant) {
+        return;
+    }
+
+    const previousLiked =
+        !!instant.liked;
+
+    const previousCount =
+        Number(
+            instant.likes || 0
+        );
+
+    const nextLiked =
+        !previousLiked;
+
+    instant.liked =
+        nextLiked;
+
+    instant.likes =
+        Math.max(
+            0,
+            previousCount +
+            (
+                nextLiked
+                    ? 1
+                    : -1
+            )
+        );
+
+    renderCurrentLikeState(
+        instant
+    );
+
+    try {
+
+        if (nextLiked) {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("instant_likes")
+                    .insert({
+
+                        instant_id:
+                            instantId,
+
+                        user_id:
+                            currentUser.id
+
+                    });
+
+            if (error) {
+                throw error;
+            }
+
+        } else {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("instant_likes")
+                    .delete()
+                    .eq(
+                        "instant_id",
+                        instantId
+                    )
+                    .eq(
+                        "user_id",
+                        currentUser.id
+                    );
+
+            if (error) {
+                throw error;
+            }
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Toggle like error:",
+            error
+        );
+
+        instant.liked =
+            previousLiked;
+
+        instant.likes =
+            previousCount;
+
+        renderCurrentLikeState(
+            instant
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   UPDATE LIKE UI
+===================================================== */
+
+function renderCurrentLikeState(
+    instant
+) {
+
+    const card =
+        document.querySelector(
+            `.instant-card[data-instant-id="${instant.id}"]`
+        );
+
+    if (!card) {
+        return;
+    }
+
+    const button =
+        card.querySelector(
+            ".like-button"
+        );
+
+    if (!button) {
+        return;
+    }
+
+    const icon =
+        button.querySelector(
+            "span"
+        );
+
+    const count =
+        button.querySelector(
+            "strong"
+        );
+
+    button.classList.toggle(
+        "liked",
+        !!instant.liked
+    );
+
+    if (icon) {
+
+        icon.textContent =
+            instant.liked
+                ? "♥"
+                : "♡";
+
+    }
+
+    if (count) {
+
+        count.textContent =
+            instant.likes;
+
+    }
+
+}
+
+
+/* =====================================================
    FEED — LOAD INSTANTS
 ===================================================== */
 
@@ -1952,19 +2461,23 @@ async function loadInstants() {
         return;
     }
 
-    loadingInstants = true;
+    loadingInstants =
+        true;
 
     if (!currentUser) {
 
-        instants = [];
+        instants =
+            [];
 
-        currentIndex = 0;
+        currentIndex =
+            0;
 
         renderInstantCards();
 
         updateHomeInstantCount();
 
-        loadingInstants = false;
+        loadingInstants =
+            false;
 
         return;
 
@@ -2002,25 +2515,18 @@ async function loadInstants() {
                 .order(
                     "created_at",
                     {
-                        ascending: false
+                        ascending:
+                            false
                     }
                 );
 
-        /*
-         * Supabase .not('id', 'in', ...)
-         * needs the UUID values formatted correctly.
-         */
-
         if (viewedIds.length) {
-
-            const formattedIds =
-                `(${viewedIds.join(",")})`;
 
             query =
                 query.not(
                     "id",
                     "in",
-                    formattedIds
+                    `(${viewedIds.join(",")})`
                 );
 
         }
@@ -2038,6 +2544,22 @@ async function loadInstants() {
         const rows =
             data || [];
 
+        const instantIds =
+            rows.map(
+                row =>
+                    row.id
+            );
+
+        const viewCounts =
+            await getViewCounts(
+                instantIds
+            );
+
+        const likeData =
+            await getLikeData(
+                instantIds
+            );
+
         const userIds =
             [
                 ...new Set(
@@ -2048,7 +2570,8 @@ async function loadInstants() {
                 )
             ];
 
-        let profiles = [];
+        let profiles =
+            [];
 
         if (userIds.length) {
 
@@ -2059,7 +2582,7 @@ async function loadInstants() {
                 await supabaseClient
                     .from("profiles")
                     .select(
-                        "id, username, display_name"
+                        "id,username,display_name,avatar_url"
                     )
                     .in(
                         "id",
@@ -2079,13 +2602,16 @@ async function loadInstants() {
             new Map(
                 profiles.map(
                     profile => [
+
                         profile.id,
                         profile
+
                     ]
                 )
             );
 
-        const processed = [];
+        const processed =
+            [];
 
         for (
             const instant of rows
@@ -2103,7 +2629,10 @@ async function loadInstants() {
                         "user",
 
                     display_name:
-                        "User"
+                        "User",
+
+                    avatar_url:
+                        ""
 
                 };
 
@@ -2114,12 +2643,8 @@ async function loadInstants() {
 
             if (!signedUrl) {
 
-                console.warn(
-                    "Skipping Instant because image could not be loaded:",
-                    instant.id
-                );
-
                 continue;
+
             }
 
             const displayName =
@@ -2149,37 +2674,61 @@ async function loadInstants() {
                         .charAt(0)
                         .toUpperCase(),
 
+                avatarUrl:
+                    usableProfile.avatar_url ||
+                    "",
+
                 time:
                     formatInstantTime(
                         instant.created_at
                     ),
 
                 caption:
-                    instant.caption || "",
+                    instant.caption ||
+                    "",
 
                 image:
                     signedUrl,
 
                 likes:
-                    0,
+                    likeData.counts.get(
+                        instant.id
+                    ) || 0,
+
+                liked:
+                    likeData.liked.has(
+                        instant.id
+                    ),
 
                 seen:
-                    0,
+                    viewCounts.get(
+                        instant.id
+                    ) || 0,
 
                 mine:
                     false,
 
                 createdAt:
-                    instant.created_at
+                    instant.created_at,
+
+                _viewed:
+                    false
 
             });
 
         }
 
         processed.sort(
-            (a, b) =>
-                new Date(b.createdAt) -
-                new Date(a.createdAt)
+            (
+                a,
+                b
+            ) =>
+                new Date(
+                    b.createdAt
+                ) -
+                new Date(
+                    a.createdAt
+                )
         );
 
         instants =
@@ -2189,7 +2738,8 @@ async function loadInstants() {
             Math.min(
                 currentIndex,
                 Math.max(
-                    instants.length - 1,
+                    instants.length -
+                    1,
                     0
                 )
             );
@@ -2205,9 +2755,11 @@ async function loadInstants() {
             error
         );
 
-        instants = [];
+        instants =
+            [];
 
-        currentIndex = 0;
+        currentIndex =
+            0;
 
         renderInstantCards();
 
@@ -2215,7 +2767,8 @@ async function loadInstants() {
 
     } finally {
 
-        loadingInstants = false;
+        loadingInstants =
+            false;
 
     }
 
@@ -2241,17 +2794,20 @@ async function loadMyInstants() {
         return;
     }
 
-    loadingMyInstants = true;
+    loadingMyInstants =
+        true;
 
     if (!currentUser) {
 
-        myInstants = [];
+        myInstants =
+            [];
 
         renderMyInstants();
 
         updateMyInstantCount();
 
-        loadingMyInstants = false;
+        loadingMyInstants =
+            false;
 
         return;
 
@@ -2289,7 +2845,8 @@ async function loadMyInstants() {
                 .order(
                     "created_at",
                     {
-                        ascending: false
+                        ascending:
+                            false
                     }
                 );
 
@@ -2300,7 +2857,24 @@ async function loadMyInstants() {
         const rows =
             data || [];
 
-        const processed = [];
+        const instantIds =
+            rows.map(
+                row =>
+                    row.id
+            );
+
+        const viewCounts =
+            await getViewCounts(
+                instantIds
+            );
+
+        const likeData =
+            await getLikeData(
+                instantIds
+            );
+
+        const processed =
+            [];
 
         for (
             const instant of rows
@@ -2312,12 +2886,6 @@ async function loadMyInstants() {
                 );
 
             if (!signedUrl) {
-
-                console.warn(
-                    "My Instant image unavailable:",
-                    instant.id
-                );
-
                 continue;
             }
 
@@ -2341,7 +2909,8 @@ async function loadMyInstants() {
                     signedUrl,
 
                 caption:
-                    instant.caption || "",
+                    instant.caption ||
+                    "",
 
                 time:
                     formatInstantTime(
@@ -2349,7 +2918,17 @@ async function loadMyInstants() {
                     ),
 
                 createdAt:
-                    instant.created_at
+                    instant.created_at,
+
+                likes:
+                    likeData.counts.get(
+                        instant.id
+                    ) || 0,
+
+                seen:
+                    viewCounts.get(
+                        instant.id
+                    ) || 0
 
             });
 
@@ -2369,7 +2948,8 @@ async function loadMyInstants() {
             error
         );
 
-        myInstants = [];
+        myInstants =
+            [];
 
         renderMyInstants();
 
@@ -2377,7 +2957,8 @@ async function loadMyInstants() {
 
     } finally {
 
-        loadingMyInstants = false;
+        loadingMyInstants =
+            false;
 
     }
 
@@ -2421,8 +3002,10 @@ async function getInstantImage(
 
         }
 
-        return data?.signedUrl ||
-            null;
+        return (
+            data?.signedUrl ||
+            null
+        );
 
     } catch (error) {
 
@@ -2505,6 +3088,10 @@ function renderMyInstants() {
                                         ${escapeHTML(instant.time)}
                                     </span>
 
+                                    <span>
+                                        👀 ${instant.seen}
+                                    </span>
+
                                 </div>
 
                             </div>
@@ -2516,15 +3103,6 @@ function renderMyInstants() {
                 }
             )
             .join("");
-
-    /*
-     * My Instants are displayed independently.
-     *
-     * We DO NOT use the main feed array here.
-     *
-     * This means your own Instants can always
-     * appear on your profile.
-     */
 
 }
 
@@ -2563,14 +3141,17 @@ function formatInstantTime(
     }
 
     const date =
-        new Date(dateString);
+        new Date(
+            dateString
+        );
 
     const seconds =
         Math.floor(
             (
                 Date.now() -
                 date.getTime()
-            ) / 1000
+            ) /
+            1000
         );
 
     if (seconds < 60) {
@@ -2675,7 +3256,8 @@ function renderInstantCards() {
         return;
     }
 
-    cardArea.innerHTML = "";
+    cardArea.innerHTML =
+        "";
 
     if (!instants.length) {
 
@@ -2844,13 +3426,22 @@ function renderInstantCards() {
                         >
 
                             <button
-                                class="like-button"
+                                class="like-button ${
+                                    instant.liked
+                                        ? "liked"
+                                        : ""
+                                }"
                                 data-index="${actualIndex}"
+                                data-instant-id="${escapeHTML(instant.id)}"
                                 type="button"
                             >
 
                                 <span>
-                                    ♡
+                                    ${
+                                        instant.liked
+                                            ? "♥"
+                                            : "♡"
+                                    }
                                 </span>
 
                                 <strong>
@@ -2885,15 +3476,6 @@ function renderInstantCards() {
     setupCardInteractions();
 
     updateProgress();
-
-    /*
-     * Important:
-     * We mark the current card as viewed
-     * ONLY after it has been rendered.
-     *
-     * Once successfully saved, it will not
-     * return after reload.
-     */
 
     markCurrentCardViewed();
 
@@ -2932,13 +3514,27 @@ async function markCurrentCardViewed() {
 
     if (!success) {
 
-        /*
-         * If saving failed, don't permanently
-         * remove it from the local feed.
-         */
-
         instant._viewed =
             false;
+
+        return;
+
+    }
+
+    instant.seen =
+        Number(
+            instant.seen || 0
+        ) + 1;
+
+    const seenElement =
+        document.querySelector(
+            `.instant-card[data-instant-id="${instant.id}"] .seen-text`
+        );
+
+    if (seenElement) {
+
+        seenElement.textContent =
+            `👀 ${instant.seen} seen`;
 
     }
 
@@ -2956,262 +3552,52 @@ function setupCardInteractions() {
             ".instant-card"
         );
 
-    cards.forEach(card => {
+    cards.forEach(
+        card => {
 
-        const cardIndex =
-            Number(
-                card.dataset.index
-            );
+            const cardIndex =
+                Number(
+                    card.dataset.index
+                );
 
-        const isTopCard =
-            cardIndex ===
-            currentIndex;
+            const isTopCard =
+                cardIndex ===
+                currentIndex;
 
-        if (!isTopCard) {
+            if (!isTopCard) {
 
-            card.style.pointerEvents =
-                "none";
-
-            return;
-
-        }
-
-        card.style.touchAction =
-            "pan-y";
-
-        let startX = 0;
-        let startY = 0;
-        let currentX = 0;
-
-        let dragging = false;
-        let horizontalSwipe = false;
-
-        card.addEventListener(
-            "pointerdown",
-            event => {
-
-                if (
-                    event.target.closest(
-                        "button"
-                    )
-                ) {
-
-                    return;
-
-                }
-
-                startX =
-                    event.clientX;
-
-                startY =
-                    event.clientY;
-
-                currentX =
-                    0;
-
-                dragging =
-                    true;
-
-                horizontalSwipe =
-                    false;
-
-            }
-        );
-
-        card.addEventListener(
-            "pointermove",
-            event => {
-
-                if (!dragging) {
-                    return;
-                }
-
-                const deltaX =
-                    event.clientX -
-                    startX;
-
-                const deltaY =
-                    event.clientY -
-                    startY;
-
-                if (
-                    !horizontalSwipe &&
-                    Math.abs(deltaY) >
-                    Math.abs(deltaX) &&
-                    Math.abs(deltaY) > 8
-                ) {
-
-                    dragging =
-                        false;
-
-                    return;
-
-                }
-
-                if (
-                    !horizontalSwipe &&
-                    Math.abs(deltaX) > 10 &&
-                    Math.abs(deltaX) >
-                    Math.abs(deltaY)
-                ) {
-
-                    horizontalSwipe =
-                        true;
-
-                    try {
-
-                        card.setPointerCapture(
-                            event.pointerId
-                        );
-
-                    } catch (error) {}
-
-                }
-
-                if (!horizontalSwipe) {
-                    return;
-                }
-
-                currentX =
-                    Math.max(
-                        0,
-                        deltaX
-                    );
-
-                const rotation =
-                    Math.min(
-                        currentX / 12,
-                        12
-                    );
-
-                card.style.transition =
+                card.style.pointerEvents =
                     "none";
 
-                card.style.transform =
-                    `
-                    translateX(${currentX}px)
-                    rotate(${rotation}deg)
-                    `;
+                return;
 
             }
-        );
 
-        card.addEventListener(
-            "pointerup",
-            event => {
+            card.style.touchAction =
+                "pan-y";
 
-                if (!dragging) {
-                    return;
-                }
+            let startX =
+                0;
 
-                dragging =
-                    false;
+            let startY =
+                0;
 
-                if (!horizontalSwipe) {
+            let currentX =
+                0;
 
-                    currentX =
-                        0;
+            let dragging =
+                false;
 
-                    return;
+            let horizontalSwipe =
+                false;
 
-                }
-
-                try {
-
-                    card.releasePointerCapture(
-                        event.pointerId
-                    );
-
-                } catch (error) {}
-
-                card.style.transition =
-                    "";
-
-                if (
-                    currentX >
-                    120
-                ) {
-
-                    swipeCard(card);
-
-                } else {
-
-                    card.classList.add(
-                        "return-card"
-                    );
-
-                    setTimeout(
-                        () => {
-
-                            card.classList.remove(
-                                "return-card"
-                            );
-
-                            card.style.transform =
-                                "";
-
-                        },
-                        350
-                    );
-
-                }
-
-                currentX =
-                    0;
-
-            }
-        );
-
-        card.addEventListener(
-            "pointercancel",
-            () => {
-
-                dragging =
-                    false;
-
-                horizontalSwipe =
-                    false;
-
-                currentX =
-                    0;
-
-                card.style.transform =
-                    "";
-
-            }
-        );
-
-    });
-
-
-    document
-        .querySelectorAll(
-            ".like-button"
-        )
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
+            card.addEventListener(
+                "pointerdown",
                 event => {
 
-                    event.stopPropagation();
-
-                    const index =
-                        Number(
-                            button.dataset.index
-                        );
-
                     if (
-                        !instants[index]
-                    ) {
-
-                        return;
-
-                    }
-
-                    if (
-                        button.classList.contains(
-                            "liked"
+                        event.target.closest(
+                            "button"
                         )
                     ) {
 
@@ -3219,38 +3605,236 @@ function setupCardInteractions() {
 
                     }
 
-                    instants[index].likes++;
+                    startX =
+                        event.clientX;
 
-                    button.classList.add(
-                        "liked"
-                    );
+                    startY =
+                        event.clientY;
 
-                    const icon =
-                        button.querySelector(
-                            "span"
-                        );
+                    currentX =
+                        0;
 
-                    const count =
-                        button.querySelector(
-                            "strong"
-                        );
+                    dragging =
+                        true;
 
-                    if (icon) {
-                        icon.textContent =
-                            "♥";
-                    }
-
-                    if (count) {
-
-                        count.textContent =
-                            instants[index].likes;
-
-                    }
+                    horizontalSwipe =
+                        false;
 
                 }
             );
 
-        });
+            card.addEventListener(
+                "pointermove",
+                event => {
+
+                    if (!dragging) {
+                        return;
+                    }
+
+                    const deltaX =
+                        event.clientX -
+                        startX;
+
+                    const deltaY =
+                        event.clientY -
+                        startY;
+
+                    if (
+                        !horizontalSwipe &&
+                        Math.abs(deltaY) >
+                        Math.abs(deltaX) &&
+                        Math.abs(deltaY) >
+                        8
+                    ) {
+
+                        dragging =
+                            false;
+
+                        return;
+
+                    }
+
+                    if (
+                        !horizontalSwipe &&
+                        Math.abs(deltaX) >
+                        10 &&
+                        Math.abs(deltaX) >
+                        Math.abs(deltaY)
+                    ) {
+
+                        horizontalSwipe =
+                            true;
+
+                        try {
+
+                            card.setPointerCapture(
+                                event.pointerId
+                            );
+
+                        } catch (
+                            error
+                        ) {}
+
+                    }
+
+                    if (
+                        !horizontalSwipe
+                    ) {
+
+                        return;
+
+                    }
+
+                    currentX =
+                        Math.max(
+                            0,
+                            deltaX
+                        );
+
+                    const rotation =
+                        Math.min(
+                            currentX /
+                            12,
+                            12
+                        );
+
+                    card.style.transition =
+                        "none";
+
+                    card.style.transform =
+                        `
+                        translateX(${currentX}px)
+                        rotate(${rotation}deg)
+                        `;
+
+                }
+            );
+
+            card.addEventListener(
+                "pointerup",
+                event => {
+
+                    if (!dragging) {
+                        return;
+                    }
+
+                    dragging =
+                        false;
+
+                    if (
+                        !horizontalSwipe
+                    ) {
+
+                        currentX =
+                            0;
+
+                        return;
+
+                    }
+
+                    try {
+
+                        card.releasePointerCapture(
+                            event.pointerId
+                        );
+
+                    } catch (
+                        error
+                    ) {}
+
+                    card.style.transition =
+                        "";
+
+                    if (
+                        currentX >
+                        120
+                    ) {
+
+                        swipeCard(
+                            card
+                        );
+
+                    } else {
+
+                        card.classList.add(
+                            "return-card"
+                        );
+
+                        setTimeout(
+                            () => {
+
+                                card.classList.remove(
+                                    "return-card"
+                                );
+
+                                card.style.transform =
+                                    "";
+
+                            },
+                            350
+                        );
+
+                    }
+
+                    currentX =
+                        0;
+
+                }
+            );
+
+            card.addEventListener(
+                "pointercancel",
+                () => {
+
+                    dragging =
+                        false;
+
+                    horizontalSwipe =
+                        false;
+
+                    currentX =
+                        0;
+
+                    card.style.transform =
+                        "";
+
+                }
+            );
+
+        }
+    );
+
+
+    document
+        .querySelectorAll(
+            ".like-button"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    async event => {
+
+                        event.stopPropagation();
+
+                        const instantId =
+                            button.dataset
+                                .instantId;
+
+                        if (!instantId) {
+                            return;
+                        }
+
+                        await toggleInstantLike(
+                            instantId
+                        );
+
+                    }
+                );
+
+            }
+        );
 
 }
 
@@ -3259,7 +3843,9 @@ function setupCardInteractions() {
    SWIPE CARD
 ===================================================== */
 
-async function swipeCard(card) {
+async function swipeCard(
+    card
+) {
 
     card.style.transition =
         "transform .35s ease, opacity .35s ease";
@@ -3286,14 +3872,6 @@ async function swipeCard(card) {
                 showFinishedState();
 
                 updateProgress();
-
-                /*
-                 * Refresh feed.
-                 *
-                 * This will query instant_views
-                 * and therefore keep already viewed
-                 * Instants hidden.
-                 */
 
                 await loadInstants();
 
@@ -3478,26 +4056,616 @@ function updateHomeInstantCount() {
 
 
 /* =====================================================
-   REQUESTS
+   FRIENDSHIP HELPERS
 ===================================================== */
 
-const requestsButton =
-    document.getElementById(
-        "requestsButton"
-    );
+function normalizeFriendStatus(
+    status
+) {
 
-if (requestsButton) {
+    return String(
+        status || ""
+    )
+        .trim()
+        .toLowerCase();
 
-    requestsButton.addEventListener(
-        "click",
-        () => {
+}
 
-            showScreen(
-                "requestsScreen"
-            );
+
+function getFriendshipState(
+    userId
+) {
+
+    if (
+        !currentUser ||
+        !userId
+    ) {
+
+        return "none";
+
+    }
+
+    if (
+        friends.some(
+            friendship =>
+                friendship.userId ===
+                userId
+        )
+    ) {
+
+        return "friends";
+
+    }
+
+    if (
+        friendRequests.some(
+            request =>
+                request.userId ===
+                userId
+        )
+    ) {
+
+        return "incoming";
+
+    }
+
+    if (
+        sentFriendRequests.some(
+            request =>
+                request.userId ===
+                userId
+        )
+    ) {
+
+        return "outgoing";
+
+    }
+
+    return "none";
+
+}
+
+
+/* =====================================================
+   LOAD FRIEND DATA
+===================================================== */
+
+async function loadFriendData() {
+
+    if (
+        !currentUser ||
+        loadingFriends
+    ) {
+
+        return;
+
+    }
+
+    loadingFriends =
+        true;
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("friendships")
+                .select(`
+                    id,
+                    requester_id,
+                    addressee_id,
+                    status,
+                    created_at
+                `)
+                .or(
+                    `requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        const rows =
+            data || [];
+
+        friends =
+            [];
+
+        friendRequests =
+            [];
+
+        sentFriendRequests =
+            [];
+
+        const otherUserIds =
+            [];
+
+        rows.forEach(
+            friendship => {
+
+                const status =
+                    normalizeFriendStatus(
+                        friendship.status
+                    );
+
+                const isRequester =
+                    friendship.requester_id ===
+                    currentUser.id;
+
+                const otherUserId =
+                    isRequester
+                        ? friendship.addressee_id
+                        : friendship.requester_id;
+
+                if (
+                    otherUserId &&
+                    !otherUserIds.includes(
+                        otherUserId
+                    )
+                ) {
+
+                    otherUserIds.push(
+                        otherUserId
+                    );
+
+                }
+
+                if (
+                    status ===
+                    "accepted"
+                ) {
+
+                    friends.push({
+
+                        friendshipId:
+                            friendship.id,
+
+                        userId:
+                            otherUserId,
+
+                        requesterId:
+                            friendship.requester_id,
+
+                        addresseeId:
+                            friendship.addressee_id,
+
+                        status
+
+                    });
+
+                } else if (
+                    status ===
+                    "pending"
+                ) {
+
+                    if (
+                        isRequester
+                    ) {
+
+                        sentFriendRequests.push({
+
+                            friendshipId:
+                                friendship.id,
+
+                            userId:
+                                otherUserId,
+
+                            requesterId:
+                                friendship.requester_id,
+
+                            addresseeId:
+                                friendship.addressee_id,
+
+                            status
+
+                        });
+
+                    } else {
+
+                        friendRequests.push({
+
+                            friendshipId:
+                                friendship.id,
+
+                            userId:
+                                otherUserId,
+
+                            requesterId:
+                                friendship.requester_id,
+
+                            addresseeId:
+                                friendship.addressee_id,
+
+                            status
+
+                        });
+
+                    }
+
+                }
+
+            }
+        );
+
+        let profiles =
+            [];
+
+        if (otherUserIds.length) {
+
+            const {
+                data: profileData,
+                error: profileError
+            } =
+                await supabaseClient
+                    .from("profiles")
+                    .select(`
+                        id,
+                        username,
+                        display_name,
+                        avatar_url
+                    `)
+                    .in(
+                        "id",
+                        otherUserIds
+                    );
+
+            if (profileError) {
+                throw profileError;
+            }
+
+            profiles =
+                profileData || [];
 
         }
-    );
+
+        const profileMap =
+            new Map(
+                profiles.map(
+                    profile => [
+
+                        profile.id,
+                        profile
+
+                    ]
+                )
+            );
+
+        friends =
+            friends.map(
+                item => ({
+
+                    ...item,
+
+                    profile:
+                        profileMap.get(
+                            item.userId
+                        ) || null
+
+                })
+            );
+
+        friendRequests =
+            friendRequests.map(
+                item => ({
+
+                    ...item,
+
+                    profile:
+                        profileMap.get(
+                            item.userId
+                        ) || null
+
+                })
+            );
+
+        sentFriendRequests =
+            sentFriendRequests.map(
+                item => ({
+
+                    ...item,
+
+                    profile:
+                        profileMap.get(
+                            item.userId
+                        ) || null
+
+                })
+            );
+
+        renderFriendUI();
+
+    } catch (error) {
+
+        console.error(
+            "Load friendships error:",
+            error
+        );
+
+    } finally {
+
+        loadingFriends =
+            false;
+
+    }
+
+}
+
+
+/* =====================================================
+   SEND FRIEND REQUEST
+===================================================== */
+
+async function sendFriendRequest(
+    userId
+) {
+
+    if (
+        !currentUser ||
+        !userId ||
+        userId === currentUser.id
+    ) {
+
+        return;
+
+    }
+
+    const state =
+        getFriendshipState(
+            userId
+        );
+
+    if (
+        state !==
+        "none"
+    ) {
+
+        return;
+
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("friendships")
+                .insert({
+
+                    requester_id:
+                        currentUser.id,
+
+                    addressee_id:
+                        userId,
+
+                    status:
+                        "pending"
+
+                })
+                .select()
+                .single();
+
+        if (error) {
+            throw error;
+        }
+
+        console.log(
+            "Friend request sent:",
+            data
+        );
+
+        await loadFriendData();
+
+    } catch (error) {
+
+        console.error(
+            "Send friend request error:",
+            error
+        );
+
+        alert(
+            error?.message ||
+            "Could not send friend request."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   ACCEPT FRIEND REQUEST
+===================================================== */
+
+async function acceptFriendRequest(
+    friendshipId
+) {
+
+    if (!currentUser || !friendshipId) {
+        return;
+    }
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("friendships")
+                .update({
+
+                    status:
+                        "accepted"
+
+                })
+                .eq(
+                    "id",
+                    friendshipId
+                )
+                .eq(
+                    "addressee_id",
+                    currentUser.id
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        await loadFriendData();
+
+    } catch (error) {
+
+        console.error(
+            "Accept friend request error:",
+            error
+        );
+
+        alert(
+            error?.message ||
+            "Could not accept request."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   REJECT FRIEND REQUEST
+===================================================== */
+
+async function rejectFriendRequest(
+    friendshipId
+) {
+
+    if (!currentUser || !friendshipId) {
+        return;
+    }
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("friendships")
+                .delete()
+                .eq(
+                    "id",
+                    friendshipId
+                )
+                .eq(
+                    "addressee_id",
+                    currentUser.id
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        await loadFriendData();
+
+    } catch (error) {
+
+        console.error(
+            "Reject friend request error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   CANCEL FRIEND REQUEST
+===================================================== */
+
+async function cancelFriendRequest(
+    friendshipId
+) {
+
+    if (!currentUser || !friendshipId) {
+        return;
+    }
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("friendships")
+                .delete()
+                .eq(
+                    "id",
+                    friendshipId
+                )
+                .eq(
+                    "requester_id",
+                    currentUser.id
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        await loadFriendData();
+
+    } catch (error) {
+
+        console.error(
+            "Cancel friend request error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   REMOVE FRIEND
+===================================================== */
+
+async function removeFriend(
+    friendshipId
+) {
+
+    if (!currentUser || !friendshipId) {
+        return;
+    }
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("friendships")
+                .delete()
+                .eq(
+                    "id",
+                    friendshipId
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        await loadFriendData();
+
+    } catch (error) {
+
+        console.error(
+            "Remove friend error:",
+            error
+        );
+
+    }
 
 }
 
@@ -3515,30 +4683,727 @@ if (friendSearch) {
 
     friendSearch.addEventListener(
         "input",
-        () => {
+        async () => {
 
-            const query =
+            currentFriendSearch =
                 friendSearch.value
-                    .toLowerCase()
-                    .trim();
+                    .trim()
+                    .toLowerCase();
 
-            const people =
-                document.querySelectorAll(
-                    ".person-row"
-                );
+            await searchProfiles(
+                currentFriendSearch
+            );
 
-            people.forEach(person => {
+        }
+    );
 
-                const text =
-                    person.textContent
-                        .toLowerCase();
+}
+
+
+/* =====================================================
+   SEARCH PROFILES
+===================================================== */
+
+async function searchProfiles(
+    query
+) {
+
+    if (!currentUser) {
+        return;
+    }
+
+    const people =
+        document.querySelectorAll(
+            ".person-row"
+        );
+
+    /*
+     * If the existing HTML already contains
+     * person rows, filter them locally.
+     */
+
+    if (!query) {
+
+        people.forEach(
+            person => {
 
                 person.style.display =
-                    text.includes(query)
-                        ? "flex"
-                        : "none";
+                    "flex";
 
-            });
+            }
+        );
+
+        return;
+
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("profiles")
+                .select(`
+                    id,
+                    username,
+                    display_name,
+                    avatar_url
+                `)
+                .neq(
+                    "id",
+                    currentUser.id
+                )
+                .or(
+                    `username.ilike.%${escapeSearchValue(query)}%,display_name.ilike.%${escapeSearchValue(query)}%`
+                )
+                .limit(
+                    30
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        renderSearchResults(
+            data || []
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Profile search error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   ESCAPE SEARCH VALUE
+===================================================== */
+
+function escapeSearchValue(
+    value
+) {
+
+    return String(
+        value || ""
+    )
+        .replace(
+            /[%_]/g,
+            "\\$&"
+        )
+        .replace(
+            /[(),]/g,
+            ""
+        );
+
+}
+
+
+/* =====================================================
+   RENDER SEARCH RESULTS
+===================================================== */
+
+function renderSearchResults(
+    profiles
+) {
+
+    const container =
+        document.querySelector(
+            ".people-list"
+        ) ||
+        document.getElementById(
+            "peopleList"
+        ) ||
+        document.getElementById(
+            "searchResults"
+        );
+
+    if (!container) {
+
+        /*
+         * Existing static HTML may not have
+         * a dedicated search container.
+         *
+         * In that case we simply leave the
+         * existing rows untouched.
+         */
+
+        return;
+
+    }
+
+    if (!profiles.length) {
+
+        container.innerHTML = `
+
+            <div class="people-empty">
+
+                <strong>
+                    No users found
+                </strong>
+
+                <span>
+                    Try another username or name.
+                </span>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+    container.innerHTML =
+        profiles
+            .map(
+                profile => {
+
+                    const state =
+                        getFriendshipState(
+                            profile.id
+                        );
+
+                    return createPersonRow(
+                        profile,
+                        state
+                    );
+
+                }
+            )
+            .join("");
+
+    bindFriendButtons();
+
+}
+
+
+/* =====================================================
+   CREATE PERSON ROW
+===================================================== */
+
+function createPersonRow(
+    profile,
+    state
+) {
+
+    const name =
+        escapeHTML(
+            profile.display_name ||
+            "User"
+        );
+
+    const username =
+        escapeHTML(
+            profile.username ||
+            "user"
+        );
+
+    const avatar =
+        escapeHTML(
+            (
+                profile.display_name ||
+                profile.username ||
+                "U"
+            )
+                .charAt(0)
+                .toUpperCase()
+        );
+
+    let buttonText =
+        "Add";
+
+    let buttonAction =
+        "send";
+
+    if (
+        state ===
+        "friends"
+    ) {
+
+        buttonText =
+            "Friends";
+
+        buttonAction =
+            "remove";
+
+    } else if (
+        state ===
+        "outgoing"
+    ) {
+
+        buttonText =
+            "Requested";
+
+        buttonAction =
+            "cancel";
+
+    } else if (
+        state ===
+        "incoming"
+    ) {
+
+        buttonText =
+            "Accept";
+
+        buttonAction =
+            "accept";
+
+    }
+
+    return `
+
+        <div
+            class="person-row"
+            data-user-id="${escapeHTML(profile.id)}"
+        >
+
+            <div class="person-avatar">
+                ${avatar}
+            </div>
+
+            <div class="person-info">
+
+                <strong>
+                    ${name}
+                </strong>
+
+                <span>
+                    @${username}
+                </span>
+
+            </div>
+
+            <button
+                type="button"
+                class="friend-action-button"
+                data-action="${buttonAction}"
+                data-user-id="${escapeHTML(profile.id)}"
+            >
+                ${buttonText}
+            </button>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =====================================================
+   RENDER FRIEND UI
+===================================================== */
+
+function renderFriendUI() {
+
+    const requestContainer =
+        document.getElementById(
+            "friendRequestsList"
+        );
+
+    if (requestContainer) {
+
+        if (!friendRequests.length) {
+
+            requestContainer.innerHTML = `
+
+                <div class="people-empty">
+
+                    <strong>
+                        No friend requests
+                    </strong>
+
+                    <span>
+                        You're all caught up.
+                    </span>
+
+                </div>
+
+            `;
+
+        } else {
+
+            requestContainer.innerHTML =
+                friendRequests
+                    .map(
+                        request => {
+
+                            const profile =
+                                request.profile || {};
+
+                            return createRequestRow(
+                                request,
+                                profile
+                            );
+
+                        }
+                    )
+                    .join("");
+
+        }
+
+    }
+
+    const friendsContainer =
+        document.getElementById(
+            "friendsList"
+        );
+
+    if (friendsContainer) {
+
+        if (!friends.length) {
+
+            friendsContainer.innerHTML = `
+
+                <div class="people-empty">
+
+                    <strong>
+                        No friends yet
+                    </strong>
+
+                    <span>
+                        Add people to start building your circle.
+                    </span>
+
+                </div>
+
+            `;
+
+        } else {
+
+            friendsContainer.innerHTML =
+                friends
+                    .map(
+                        friend => {
+
+                            const profile =
+                                friend.profile ||
+                                {};
+
+                            return createFriendRow(
+                                friend,
+                                profile
+                            );
+
+                        }
+                    )
+                    .join("");
+
+        }
+
+    }
+
+    const requestCount =
+        document.getElementById(
+            "requestCount"
+        );
+
+    if (requestCount) {
+
+        requestCount.textContent =
+            friendRequests.length;
+
+        requestCount.style.display =
+            friendRequests.length
+                ? ""
+                : "none";
+
+    }
+
+    bindFriendButtons();
+
+}
+
+
+/* =====================================================
+   CREATE REQUEST ROW
+===================================================== */
+
+function createRequestRow(
+    request,
+    profile
+) {
+
+    const name =
+        escapeHTML(
+            profile.display_name ||
+            "User"
+        );
+
+    const username =
+        escapeHTML(
+            profile.username ||
+            "user"
+        );
+
+    const avatar =
+        escapeHTML(
+            (
+                profile.display_name ||
+                profile.username ||
+                "U"
+            )
+                .charAt(0)
+                .toUpperCase()
+        );
+
+    return `
+
+        <div
+            class="person-row"
+            data-user-id="${escapeHTML(request.userId)}"
+        >
+
+            <div class="person-avatar">
+                ${avatar}
+            </div>
+
+            <div class="person-info">
+
+                <strong>
+                    ${name}
+                </strong>
+
+                <span>
+                    @${username}
+                </span>
+
+            </div>
+
+            <div class="friend-request-actions">
+
+                <button
+                    type="button"
+                    class="friend-action-button"
+                    data-action="accept"
+                    data-friendship-id="${escapeHTML(request.friendshipId)}"
+                >
+                    Accept
+                </button>
+
+                <button
+                    type="button"
+                    class="friend-action-button secondary"
+                    data-action="reject"
+                    data-friendship-id="${escapeHTML(request.friendshipId)}"
+                >
+                    Reject
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =====================================================
+   CREATE FRIEND ROW
+===================================================== */
+
+function createFriendRow(
+    friend,
+    profile
+) {
+
+    const name =
+        escapeHTML(
+            profile.display_name ||
+            "User"
+        );
+
+    const username =
+        escapeHTML(
+            profile.username ||
+            "user"
+        );
+
+    const avatar =
+        escapeHTML(
+            (
+                profile.display_name ||
+                profile.username ||
+                "U"
+            )
+                .charAt(0)
+                .toUpperCase()
+        );
+
+    return `
+
+        <div
+            class="person-row"
+            data-user-id="${escapeHTML(friend.userId)}"
+        >
+
+            <div class="person-avatar">
+                ${avatar}
+            </div>
+
+            <div class="person-info">
+
+                <strong>
+                    ${name}
+                </strong>
+
+                <span>
+                    @${username}
+                </span>
+
+            </div>
+
+            <button
+                type="button"
+                class="friend-action-button secondary"
+                data-action="remove"
+                data-friendship-id="${escapeHTML(friend.friendshipId)}"
+            >
+                Friends
+            </button>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =====================================================
+   FRIEND BUTTON EVENTS
+===================================================== */
+
+function bindFriendButtons() {
+
+    document
+        .querySelectorAll(
+            ".friend-action-button"
+        )
+        .forEach(
+            button => {
+
+                if (
+                    button.dataset.bound ===
+                    "true"
+                ) {
+
+                    return;
+
+                }
+
+                button.dataset.bound =
+                    "true";
+
+                button.addEventListener(
+                    "click",
+                    async event => {
+
+                        event.preventDefault();
+
+                        const action =
+                            button.dataset.action;
+
+                        const userId =
+                            button.dataset.userId;
+
+                        const friendshipId =
+                            button.dataset.friendshipId;
+
+                        button.disabled =
+                            true;
+
+                        try {
+
+                            if (
+                                action ===
+                                "send"
+                            ) {
+
+                                await sendFriendRequest(
+                                    userId
+                                );
+
+                            } else if (
+                                action ===
+                                "accept"
+                            ) {
+
+                                await acceptFriendRequest(
+                                    friendshipId
+                                );
+
+                            } else if (
+                                action ===
+                                "reject"
+                            ) {
+
+                                await rejectFriendRequest(
+                                    friendshipId
+                                );
+
+                            } else if (
+                                action ===
+                                "cancel"
+                            ) {
+
+                                await cancelFriendRequest(
+                                    friendshipId
+                                );
+
+                            } else if (
+                                action ===
+                                "remove"
+                            ) {
+
+                                await removeFriend(
+                                    friendshipId
+                                );
+
+                            }
+
+                        } finally {
+
+                            button.disabled =
+                                false;
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+/* =====================================================
+   REQUESTS BUTTON
+===================================================== */
+
+const requestsButton =
+    document.getElementById(
+        "requestsButton"
+    );
+
+if (requestsButton) {
+
+    requestsButton.addEventListener(
+        "click",
+        async () => {
+
+            await loadFriendData();
+
+            showScreen(
+                "requestsScreen"
+            );
 
         }
     );
@@ -3554,42 +5419,47 @@ document
     .querySelectorAll(
         ".friend-tab"
     )
-    .forEach(tab => {
+    .forEach(
+        tab => {
 
-        tab.addEventListener(
-            "click",
-            () => {
+            tab.addEventListener(
+                "click",
+                async () => {
 
-                document
-                    .querySelectorAll(
-                        ".friend-tab"
-                    )
-                    .forEach(item =>
-                        item.classList
-                            .remove(
-                                "active"
-                            )
+                    document
+                        .querySelectorAll(
+                            ".friend-tab"
+                        )
+                        .forEach(
+                            item =>
+                                item.classList
+                                    .remove(
+                                        "active"
+                                    )
+                        );
+
+                    tab.classList.add(
+                        "active"
                     );
 
-                tab.classList.add(
-                    "active"
-                );
+                    await loadFriendData();
 
-                if (
-                    tab.dataset.tab ===
-                    "requests"
-                ) {
+                    if (
+                        tab.dataset.tab ===
+                        "requests"
+                    ) {
 
-                    showScreen(
-                        "requestsScreen"
-                    );
+                        showScreen(
+                            "requestsScreen"
+                        );
+
+                    }
 
                 }
+            );
 
-            }
-        );
-
-    });
+        }
+    );
 
 
 /* =====================================================
@@ -3645,7 +5515,9 @@ document.addEventListener(
     "visibilitychange",
     () => {
 
-        if (document.hidden) {
+        if (
+            document.hidden
+        ) {
 
             stopCamera();
 
@@ -3682,6 +5554,8 @@ window.addEventListener(
 
         loadMyInstants();
 
+        loadFriendData();
+
     }
 );
 
@@ -3690,6 +5564,8 @@ window.addEventListener(
    INITIALIZE
 ===================================================== */
 
-setAuthMode("login");
+setAuthMode(
+    "login"
+);
 
 initializeAuth();
