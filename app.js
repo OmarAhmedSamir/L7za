@@ -17,7 +17,7 @@ const SUPABASE_URL =
     "https://ogxbaalnebmmqxneypuy.supabase.co";
 
 const SUPABASE_KEY =
-    "sb_publishable_ksfgbcVqNa6P8GRrahVhDYA_KLK30bt7";
+    "sb_publishable_ksfgbcVqNa6P8GRahVhDYA_KLK30bt7";
 
 const supabaseClient =
     window.supabase.createClient(
