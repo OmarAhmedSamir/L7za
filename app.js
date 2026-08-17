@@ -73,7 +73,7 @@ document.querySelectorAll(".back-button").forEach(button => {
 
 
 /* =====================================================
-   CAMERA MODAL
+   PHASE 2 — REAL CAMERA
 ===================================================== */
 
 const captureButton =
@@ -88,49 +88,631 @@ const captureModal =
 const closeCapture =
     document.getElementById("closeCapture");
 
+const cameraVideo =
+    document.getElementById("cameraVideo");
 
-function openCamera() {
+const liveCamera =
+    document.getElementById("liveCamera");
+
+const switchCamera =
+    document.getElementById("switchCamera");
+
+const realCaptureButton =
+    document.getElementById("realCaptureButton");
+
+const photoPreview =
+    document.getElementById("photoPreview");
+
+const capturedImage =
+    document.getElementById("capturedImage");
+
+const previewClose =
+    document.getElementById("previewClose");
+
+const instantCaption =
+    document.getElementById("instantCaption");
+
+const sendInstantButton =
+    document.getElementById("sendInstantButton");
+
+
+let cameraStream = null;
+
+let currentFacingMode = "user";
+
+let capturedPhotoBlob = null;
+
+
+/* =====================================================
+   OPEN CAMERA
+===================================================== */
+
+async function openRealCamera() {
 
     captureModal.classList.add("show");
 
     document.body.style.overflow = "hidden";
 
+    await startCamera();
+
 }
 
 
-function closeCamera() {
+/* =====================================================
+   START CAMERA
+===================================================== */
 
-    captureModal.classList.remove("show");
+async function startCamera() {
+
+    stopCamera();
+
+
+    try {
+
+        cameraStream =
+            await navigator.mediaDevices.getUserMedia({
+
+                video: {
+
+                    facingMode: {
+                        ideal: currentFacingMode
+                    },
+
+                    width: {
+                        ideal: 1920
+                    },
+
+                    height: {
+                        ideal: 1080
+                    }
+
+                },
+
+                audio: false
+
+            });
+
+
+        cameraVideo.srcObject =
+            cameraStream;
+
+
+        await cameraVideo.play();
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Camera error:",
+            error
+        );
+
+
+        showCameraError();
+
+    }
+
+}
+
+
+/* =====================================================
+   STOP CAMERA
+===================================================== */
+
+function stopCamera() {
+
+    if (!cameraStream) {
+        return;
+    }
+
+
+    cameraStream
+        .getTracks()
+        .forEach(track => {
+
+            track.stop();
+
+        });
+
+
+    cameraStream = null;
+
+}
+
+
+/* =====================================================
+   SWITCH CAMERA
+===================================================== */
+
+switchCamera.addEventListener(
+    "click",
+    async event => {
+
+        event.stopPropagation();
+
+
+        currentFacingMode =
+            currentFacingMode === "user"
+                ? "environment"
+                : "user";
+
+
+        await startCamera();
+
+    }
+);
+
+
+/* =====================================================
+   CAPTURE PHOTO
+===================================================== */
+
+realCaptureButton.addEventListener(
+    "click",
+    capturePhoto
+);
+
+
+async function capturePhoto() {
+
+    if (!cameraStream) {
+        return;
+    }
+
+
+    /*
+        Make sure video dimensions exist.
+    */
+
+    if (
+        !cameraVideo.videoWidth ||
+        !cameraVideo.videoHeight
+    ) {
+
+        return;
+
+    }
+
+
+    const canvas =
+        document.createElement("canvas");
+
+
+    canvas.width =
+        cameraVideo.videoWidth;
+
+
+    canvas.height =
+        cameraVideo.videoHeight;
+
+
+    const context =
+        canvas.getContext("2d");
+
+
+    /*
+        Mirror only the front camera.
+    */
+
+    if (currentFacingMode === "user") {
+
+        context.translate(
+            canvas.width,
+            0
+        );
+
+        context.scale(
+            -1,
+            1
+        );
+
+    }
+
+
+    context.drawImage(
+        cameraVideo,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    /*
+        Convert canvas to WebP.
+    */
+
+    canvas.toBlob(
+        blob => {
+
+            if (!blob) {
+                return;
+            }
+
+
+            capturedPhotoBlob = blob;
+
+
+            const imageURL =
+                URL.createObjectURL(blob);
+
+
+            capturedImage.src =
+                imageURL;
+
+
+            liveCamera.style.display =
+                "none";
+
+
+            photoPreview.classList.add(
+                "active"
+            );
+
+
+            stopCamera();
+
+
+            instantCaption.value = "";
+
+
+            setTimeout(() => {
+
+                instantCaption.focus();
+
+            }, 150);
+
+        },
+
+        "image/webp",
+
+        0.90
+
+    );
+
+}
+
+
+/* =====================================================
+   CLOSE CAMERA
+===================================================== */
+
+function closeRealCamera() {
+
+    stopCamera();
+
+
+    captureModal.classList.remove(
+        "show"
+    );
+
 
     document.body.style.overflow = "";
 
+
+    resetCameraUI();
+
 }
 
 
+closeCapture.addEventListener(
+    "click",
+    closeRealCamera
+);
+
+
+/* =====================================================
+   PREVIEW CLOSE
+===================================================== */
+
+previewClose.addEventListener(
+    "click",
+    () => {
+
+        /*
+            Since there is NO RETAKE,
+            closing the preview cancels
+            this Instant completely.
+        */
+
+        closeRealCamera();
+
+    }
+);
+
+
+/* =====================================================
+   RESET CAMERA UI
+===================================================== */
+
+function resetCameraUI() {
+
+    photoPreview.classList.remove(
+        "active"
+    );
+
+
+    liveCamera.style.display =
+        "block";
+
+
+    capturedImage.src = "";
+
+
+    capturedPhotoBlob = null;
+
+
+    instantCaption.value = "";
+
+}
+
+
+/* =====================================================
+   SEND INSTANT
+===================================================== */
+
+sendInstantButton.addEventListener(
+    "click",
+    sendInstant
+);
+
+
+function sendInstant() {
+
+    if (!capturedPhotoBlob) {
+        return;
+    }
+
+
+    const caption =
+        instantCaption.value.trim();
+
+
+    /*
+        Temporary local Instant.
+        Supabase will replace this
+        in the backend phase.
+    */
+
+    const temporaryInstant = {
+
+        id:
+            Date.now(),
+
+        name:
+            "You",
+
+        username:
+            "@you",
+
+        avatar:
+            "O",
+
+        time:
+            "Just now",
+
+        caption:
+            caption || " ",
+
+        photoBlob:
+            capturedPhotoBlob,
+
+        likes:
+            0,
+
+        seen:
+            0
+
+    };
+
+
+    /*
+        Store temporarily in memory.
+    */
+
+    window.myLatestInstant =
+        temporaryInstant;
+
+
+    /*
+        Close camera.
+    */
+
+    closeRealCamera();
+
+
+    /*
+        Small confirmation.
+    */
+
+    showInstantSent();
+
+
+}
+
+
+/* =====================================================
+   SENT FEEDBACK
+===================================================== */
+
+function showInstantSent() {
+
+    const message =
+        document.createElement("div");
+
+
+    message.style.position =
+        "fixed";
+
+    message.style.left =
+        "50%";
+
+    message.style.bottom =
+        "105px";
+
+    message.style.transform =
+        "translateX(-50%)";
+
+    message.style.zIndex =
+        "1000";
+
+    message.style.padding =
+        "12px 18px";
+
+    message.style.borderRadius =
+        "100px";
+
+    message.style.background =
+        "white";
+
+    message.style.color =
+        "black";
+
+    message.style.fontSize =
+        "11px";
+
+    message.style.fontWeight =
+        "700";
+
+    message.textContent =
+        "Instant sent ✓";
+
+
+    document.body.appendChild(
+        message
+    );
+
+
+    setTimeout(() => {
+
+        message.style.opacity =
+            "0";
+
+        message.style.transition =
+            ".3s ease";
+
+
+        setTimeout(() => {
+
+            message.remove();
+
+        }, 300);
+
+    }, 1800);
+
+}
+
+
+/* =====================================================
+   CAMERA ERROR
+===================================================== */
+
+function showCameraError() {
+
+    liveCamera.innerHTML = `
+
+        <div class="camera-error">
+
+            <div class="camera-error-icon">
+                📷
+            </div>
+
+            <h2>
+                Camera access needed
+            </h2>
+
+            <p>
+                L7za needs access to your camera
+                to create an Instant.
+                Please allow camera permission
+                and try again.
+            </p>
+
+            <button id="retryCamera">
+                Try again
+            </button>
+
+        </div>
+
+    `;
+
+
+    const retry =
+        document.getElementById(
+            "retryCamera"
+        );
+
+
+    retry.addEventListener(
+        "click",
+        () => {
+
+            /*
+                Restore video UI.
+            */
+
+            liveCamera.innerHTML = `
+
+                <video
+                    id="cameraVideo"
+                    autoplay
+                    playsinline
+                    muted
+                ></video>
+
+            `;
+
+
+            /*
+                Reconnect reference.
+            */
+
+            window.cameraVideo =
+                document.getElementById(
+                    "cameraVideo"
+                );
+
+
+            startCamera();
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   OPEN CAMERA BUTTONS
+===================================================== */
+
 captureButton.addEventListener(
     "click",
-    openCamera
+    openRealCamera
 );
 
 
 navCamera.addEventListener(
     "click",
-    openCamera
+    openRealCamera
 );
 
 
-closeCapture.addEventListener(
-    "click",
-    closeCamera
-);
-
+/* =====================================================
+   CLOSE WHEN CLICKING BACKDROP
+===================================================== */
 
 captureModal.addEventListener(
     "click",
     event => {
 
-        if (event.target === captureModal) {
-            closeCamera();
+        if (
+            event.target ===
+            captureModal
+        ) {
+
+            closeRealCamera();
+
         }
 
     }
