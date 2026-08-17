@@ -524,39 +524,128 @@
     </nav>
 
 
-    <!-- =========================================
-         CAPTURE MODAL
-    ========================================== -->
+   <!-- =========================================
+     REAL CAMERA MODAL
+========================================== -->
 
-    <div class="modal" id="captureModal">
+<div class="modal" id="captureModal">
 
-        <div class="modal-content">
+    <div class="camera-modal">
 
-            <button class="modal-close" id="closeCapture">
-                ×
-            </button>
+        <button
+            class="modal-close"
+            id="closeCapture"
+            aria-label="Close camera"
+        >
+            ×
+        </button>
 
-            <div class="fake-camera">
+        <!-- LIVE CAMERA -->
 
-                <div class="fake-camera-message">
-                    <span>📷</span>
+        <div class="live-camera" id="liveCamera">
 
-                    <h2>Camera coming next</h2>
+            <video
+                id="cameraVideo"
+                autoplay
+                playsinline
+                muted
+            ></video>
 
-                    <p>
-                        The real camera experience
-                        will be added in Phase 2.
-                    </p>
-                </div>
+            <div class="camera-top">
+
+                <span class="camera-status">
+                    <span class="status-dot"></span>
+                    LIVE
+                </span>
+
+                <button
+                    class="switch-camera"
+                    id="switchCamera"
+                    aria-label="Switch camera"
+                >
+                    ↻
+                </button>
+
+            </div>
+
+            <div class="camera-bottom">
+
+                <span class="camera-label">
+                    L7ZA
+                </span>
+
+                <button
+                    class="real-capture-button"
+                    id="realCaptureButton"
+                    aria-label="Take photo"
+                >
+                    <span></span>
+                </button>
+
+                <span class="camera-hint">
+                    Camera only
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- PHOTO PREVIEW -->
+
+        <div
+            class="photo-preview"
+            id="photoPreview"
+        >
+
+            <img
+                id="capturedImage"
+                alt="Captured Instant"
+            >
+
+            <div class="preview-overlay"></div>
+
+
+            <div class="preview-top">
+
+                <button
+                    class="preview-close"
+                    id="previewClose"
+                >
+                    ×
+                </button>
+
+                <span class="preview-label">
+                    YOUR L7ZA
+                </span>
+
+            </div>
+
+
+            <div class="preview-bottom">
+
+                <input
+                    type="text"
+                    id="instantCaption"
+                    maxlength="100"
+                    placeholder="Add a caption..."
+                    autocomplete="off"
+                >
+
+
+                <button
+                    class="send-instant-button"
+                    id="sendInstantButton"
+                >
+                    <span>Send Instant</span>
+                    <strong>→</strong>
+                </button>
 
             </div>
 
         </div>
 
     </div>
-
-
-    <script src="app.js"></script>
 
 </div>
 
