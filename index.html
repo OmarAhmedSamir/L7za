@@ -72,8 +72,6 @@
             </div>
 
 
-            <!-- SIGN UP NAME -->
-
             <div
                 class="auth-field signup-only"
                 id="displayNameField"
@@ -92,8 +90,6 @@
 
             </div>
 
-
-            <!-- USERNAME -->
 
             <div
                 class="auth-field signup-only"
@@ -115,8 +111,6 @@
             </div>
 
 
-            <!-- EMAIL -->
-
             <div class="auth-field">
 
                 <label for="authEmail">
@@ -132,8 +126,6 @@
 
             </div>
 
-
-            <!-- PASSWORD -->
 
             <div class="auth-field">
 
@@ -151,15 +143,11 @@
             </div>
 
 
-            <!-- AUTH MESSAGE -->
-
             <div
                 class="auth-message"
                 id="authMessage"
             ></div>
 
-
-            <!-- AUTH BUTTON -->
 
             <button
                 class="auth-submit"
@@ -169,14 +157,13 @@
             </button>
 
 
-            <!-- SWITCH -->
-
             <button
                 class="auth-switch"
                 id="authSwitch"
             >
 
                 Don't have an account?
+
                 <strong>
                     Sign up
                 </strong>
@@ -225,7 +212,9 @@
                 aria-label="Friend requests"
             >
 
-                <span class="bell-icon">♡</span>
+                <span class="bell-icon">
+                    ♡
+                </span>
 
                 <span class="notification-dot"></span>
 
@@ -270,7 +259,9 @@
 
 
 
-                <!-- CAMERA CARD -->
+                <!-- =================================================
+                     CAMERA CARD
+                ================================================== -->
 
                 <div
                     class="camera-card"
@@ -319,7 +310,9 @@
 
 
 
-                <!-- FRIENDS -->
+                <!-- =================================================
+                     FRIEND INSTANTS
+                ================================================== -->
 
                 <div class="section-header">
 
@@ -345,80 +338,24 @@
                 </div>
 
 
+                <!--
+                    IMPORTANT:
+                    This is intentionally empty.
 
-                <div class="friends-strip">
+                    JavaScript should populate this with
+                    REAL friends from Supabase.
+                -->
 
-                    <div class="friend-avatar has-instant">
-
-                        <div class="avatar avatar-one">
-                            A
-                        </div>
-
-                        <span>
-                            Ahmed
-                        </span>
-
-                    </div>
-
-
-                    <div class="friend-avatar has-instant">
-
-                        <div class="avatar avatar-two">
-                            M
-                        </div>
-
-                        <span>
-                            Mohamed
-                        </span>
-
-                    </div>
-
-
-                    <div class="friend-avatar has-instant">
-
-                        <div class="avatar avatar-three">
-                            Y
-                        </div>
-
-                        <span>
-                            Youssef
-                        </span>
-
-                    </div>
-
-
-                    <div class="friend-avatar has-instant">
-
-                        <div class="avatar avatar-four">
-                            O
-                        </div>
-
-                        <span>
-                            Omar
-                        </span>
-
-                    </div>
-
-
-                    <div class="friend-avatar">
-
-                        <div class="avatar avatar-five">
-                            A
-                        </div>
-
-                        <span>
-                            Ali
-                        </span>
-
-                    </div>
-
-                </div>
-
+                <div
+                    class="friends-strip"
+                    id="friendsStrip"
+                ></div>
 
 
                 <button
                     class="instant-count"
                     id="instantCount"
+                    type="button"
                 >
 
                     <div class="count-icon">
@@ -428,7 +365,7 @@
                     <div class="count-text">
 
                         <strong id="instantCountTitle">
-                            4 new Instants
+                            0 new Instants
                         </strong>
 
                         <span>
@@ -459,17 +396,18 @@
                 <div class="screen-header">
 
                     <button
-                        class="back-button"
+                        class="back-button instant-back-button"
                         data-back="homeScreen"
+                        type="button"
                     >
                         ←
+                        <span>
+                            Back to Home
+                        </span>
                     </button>
 
-                    <div>
 
-                        <p class="eyebrow">
-                            FRIENDS
-                        </p>
+                    <div class="instant-screen-title">
 
                         <h1>
                             Instants
@@ -477,10 +415,11 @@
 
                     </div>
 
+
                     <div class="progress-count">
 
                         <span id="currentInstant">
-                            1
+                            0
                         </span>
 
                         /
@@ -563,6 +502,7 @@
                     <button
                         class="friend-tab active"
                         data-tab="friends"
+                        type="button"
                     >
                         Friends
                     </button>
@@ -570,7 +510,9 @@
                     <button
                         class="friend-tab"
                         data-tab="requests"
+                        type="button"
                     >
+
                         Requests
 
                         <span class="tab-badge">
@@ -605,6 +547,7 @@
                     <button
                         class="back-button"
                         data-back="friendsScreen"
+                        type="button"
                     >
                         ←
                     </button>
@@ -648,6 +591,7 @@
                         class="settings-button"
                         id="logoutButton"
                         aria-label="Sign out"
+                        type="button"
                     >
                         ↪
                     </button>
@@ -665,11 +609,11 @@
                     </div>
 
                     <h1 id="profileName">
-                        Omar
+                        User
                     </h1>
 
                     <p id="profileUsername">
-                        @omar
+                        @user
                     </p>
 
 
@@ -703,7 +647,11 @@
                     </div>
 
 
-                    <button class="edit-profile-button">
+                    <button
+                        class="edit-profile-button"
+                        id="editProfileButton"
+                        type="button"
+                    >
                         Edit profile
                     </button>
 
@@ -751,6 +699,7 @@
             <button
                 class="nav-item active"
                 data-screen="homeScreen"
+                type="button"
             >
 
                 <span class="nav-icon">
@@ -767,6 +716,7 @@
             <button
                 class="nav-item"
                 data-screen="instantsScreen"
+                type="button"
             >
 
                 <span class="nav-icon">
@@ -784,6 +734,7 @@
                 class="nav-camera"
                 id="navCamera"
                 aria-label="Open camera"
+                type="button"
             >
 
                 <span>
@@ -796,6 +747,7 @@
             <button
                 class="nav-item"
                 data-screen="friendsScreen"
+                type="button"
             >
 
                 <span class="nav-icon">
@@ -812,6 +764,7 @@
             <button
                 class="nav-item"
                 data-screen="profileScreen"
+                type="button"
             >
 
                 <span class="nav-icon">
@@ -841,6 +794,8 @@
 
         <div class="real-camera">
 
+            <!-- LIVE CAMERA -->
+
             <video
                 id="cameraVideo"
                 autoplay
@@ -853,22 +808,30 @@
             ></canvas>
 
 
+            <!-- CAMERA TOP -->
+
             <div class="camera-top-controls">
 
                 <button
-                    class="camera-control"
+                    class="camera-control liquid-glass"
                     id="closeCapture"
+                    type="button"
+                    aria-label="Close camera"
                 >
                     ×
                 </button>
 
-                <div class="camera-mode">
+
+                <div class="camera-mode liquid-glass">
                     L7za
                 </div>
 
+
                 <button
-                    class="camera-control"
+                    class="camera-control liquid-glass"
                     id="switchCamera"
+                    type="button"
+                    aria-label="Switch camera"
                 >
                     ↻
                 </button>
@@ -876,15 +839,40 @@
             </div>
 
 
+
+            <!-- =================================================
+                 LENS SELECTOR
+                 JavaScript fills this dynamically.
+            ================================================== -->
+
+            <div
+                id="cameraLensSelector"
+                class="camera-lens-selector"
+            ></div>
+
+
+
+            <!-- =================================================
+                 CAMERA GUIDES
+            ================================================== -->
+
             <div class="camera-guides">
 
                 <div class="guide-corner top-left"></div>
+
                 <div class="guide-corner top-right"></div>
+
                 <div class="guide-corner bottom-left"></div>
+
                 <div class="guide-corner bottom-right"></div>
 
             </div>
 
+
+
+            <!-- =================================================
+                 CAMERA ERROR
+            ================================================== -->
 
             <div
                 class="camera-error"
@@ -906,6 +894,7 @@
                 <button
                     class="retry-camera"
                     id="retryCamera"
+                    type="button"
                 >
                     Try again
                 </button>
@@ -913,25 +902,34 @@
             </div>
 
 
+
+            <!-- =================================================
+                 CAMERA BOTTOM
+            ================================================== -->
+
             <div class="camera-bottom-controls">
 
                 <div class="camera-bottom-side"></div>
+
 
                 <button
                     class="real-capture-button"
                     id="realCaptureButton"
                     aria-label="Take photo"
+                    type="button"
                 >
 
                     <span></span>
 
                 </button>
 
+
                 <div class="camera-bottom-side">
 
                     <button
                         class="camera-close-text"
                         id="cancelCamera"
+                        type="button"
                     >
                         Cancel
                     </button>
@@ -939,6 +937,18 @@
                 </div>
 
             </div>
+
+
+
+            <!-- =================================================
+                 FILTER SELECTOR
+                 JavaScript generates the 6 filters here.
+            ================================================== -->
+
+            <div
+                id="cameraFilterSelector"
+                class="camera-filter-selector"
+            ></div>
 
         </div>
 
@@ -980,6 +990,7 @@
                 <button
                     class="post-instant-button"
                     id="postInstantButton"
+                    type="button"
                 >
                     Post Instant
                 </button>
@@ -987,8 +998,104 @@
                 <button
                     class="discard-button"
                     id="discardButton"
+                    type="button"
                 >
                     Discard
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         EDIT PROFILE MODAL
+    ====================================================== -->
+
+    <div
+        class="modal edit-profile-modal"
+        id="editProfileModal"
+    >
+
+        <div class="edit-profile-card liquid-glass-card">
+
+            <div class="edit-profile-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        PROFILE
+                    </p>
+
+                    <h2>
+                        Edit profile
+                    </h2>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="modal-close-button"
+                    id="closeEditProfile"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="edit-profile-form">
+
+                <div class="auth-field">
+
+                    <label for="editDisplayName">
+                        Display name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editDisplayName"
+                        maxlength="40"
+                        autocomplete="name"
+                        placeholder="Your name"
+                    >
+
+                </div>
+
+
+                <div class="auth-field">
+
+                    <label for="editUsername">
+                        Username
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editUsername"
+                        maxlength="24"
+                        autocomplete="username"
+                        placeholder="username"
+                    >
+
+                </div>
+
+
+                <div
+                    class="edit-profile-message"
+                    id="editProfileMessage"
+                ></div>
+
+
+                <button
+                    type="button"
+                    class="save-profile-button"
+                    id="saveProfileButton"
+                >
+                    Save changes
                 </button>
 
             </div>
@@ -1008,6 +1115,7 @@
     ></script>
 
     <script src="app.js"></script>
+
 
 </div>
 
