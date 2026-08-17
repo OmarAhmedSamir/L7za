@@ -2583,3 +2583,254 @@ h2 {
     }
 
 }
+/* =====================================================
+   INSTANT CARDS — FIXED STACK
+===================================================== */
+
+.card-area {
+    position: relative;
+    width: 100%;
+    height: min(68vh, 680px);
+    min-height: 500px;
+    overflow: hidden;
+    touch-action: pan-y;
+}
+
+
+.instant-card {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+
+    border-radius: 28px;
+    overflow: hidden;
+
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+
+    will-change: transform;
+
+    transition:
+        transform .35s ease,
+        opacity .35s ease;
+}
+
+
+/*
+   Only the first card is the active card.
+*/
+
+.instant-card:nth-child(1) {
+    z-index: 10;
+}
+
+
+/*
+   Cards behind it get progressively smaller.
+*/
+
+.instant-card:nth-child(2) {
+    z-index: 9;
+    transform:
+        translateY(12px)
+        scale(.97);
+}
+
+
+.instant-card:nth-child(3) {
+    z-index: 8;
+    transform:
+        translateY(24px)
+        scale(.94);
+}
+
+
+.instant-card:nth-child(n + 4) {
+    z-index: 7;
+    transform:
+        translateY(34px)
+        scale(.91);
+}
+
+
+/* =====================================================
+   INSTANT PHOTO
+===================================================== */
+
+.instant-photo {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background-size: cover;
+    background-position: center;
+
+    overflow: hidden;
+}
+
+
+/* =====================================================
+   USER INFO
+===================================================== */
+
+.instant-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+
+.instant-user .avatar {
+    flex: 0 0 44px;
+
+    width: 44px;
+    height: 44px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.22);
+
+    color: white;
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+
+.instant-user > div:last-child {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+
+.instant-user strong {
+    display: block;
+
+    color: white;
+
+    font-size: 15px;
+    line-height: 1.2;
+    font-weight: 700;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.instant-user span {
+    display: block;
+
+    color: rgba(255,255,255,.65);
+
+    font-size: 11px;
+    line-height: 1.2;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* =====================================================
+   INSTANT INFO
+===================================================== */
+
+.instant-info {
+    position: absolute;
+
+    left: 22px;
+    right: 22px;
+    bottom: 24px;
+
+    z-index: 5;
+}
+
+
+.instant-caption {
+    margin: 14px 0 12px;
+
+    color: white;
+
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+
+.instant-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+
+.like-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    border: 0;
+    background: none;
+
+    color: white;
+
+    padding: 6px;
+
+    cursor: pointer;
+}
+
+
+.seen-text {
+    color: rgba(255,255,255,.7);
+    font-size: 11px;
+}
+/* =====================================================
+   INSTANT SCREEN SCROLL
+===================================================== */
+
+#instantsScreen {
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    -webkit-overflow-scrolling: touch;
+
+    touch-action: pan-y;
+}
+
+
+#instantsScreen .card-area {
+    touch-action: pan-y;
+}
+
+
+#instantsScreen .instant-card {
+    touch-action: pan-y;
+}
+
+
+/*
+   Prevent buttons from interfering with scrolling.
+*/
+
+.instant-user,
+.instant-caption,
+.seen-text {
+    pointer-events: none;
+}
+
+
+.like-button {
+    pointer-events: auto;
+}
