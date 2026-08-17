@@ -1,1 +1,564 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
+    >
+
+    <title>Now — Real Moments</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- =========================================
+         TOP BAR
+    ========================================== -->
+
+    <header class="topbar">
+
+        <div class="brand">
+            <span class="brand-dot"></span>
+            <span>now</span>
+        </div>
+
+        <button class="icon-button" id="requestsButton" aria-label="Friend requests">
+            <span class="bell-icon">♡</span>
+            <span class="notification-dot"></span>
+        </button>
+
+    </header>
+
+
+    <!-- =========================================
+         MAIN CONTENT
+    ========================================== -->
+
+    <main class="main-content">
+
+
+        <!-- =====================================
+             HOME
+        ====================================== -->
+
+        <section class="screen active" id="homeScreen">
+
+            <div class="home-heading">
+
+                <div>
+                    <p class="eyebrow">TODAY</p>
+
+                    <h1>
+                        Capture the
+                        <span>moment.</span>
+                    </h1>
+                </div>
+
+            </div>
+
+
+            <!-- Camera Card -->
+
+            <div class="camera-card" id="cameraCard">
+
+                <div class="camera-background">
+
+                    <div class="camera-overlay"></div>
+
+                    <div class="camera-content">
+
+                        <div class="camera-small-icon">
+                            <span>✦</span>
+                        </div>
+
+                        <h2>Take an Instant</h2>
+
+                        <p>
+                            Camera only.
+                            <br>
+                            No filters. No retakes.
+                        </p>
+
+                        <button class="capture-button" id="captureButton">
+                            <span></span>
+                        </button>
+
+                        <small>Tap to capture</small>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Friends Instants -->
+
+            <div class="section-header">
+
+                <div>
+                    <p class="eyebrow">FRIENDS</p>
+                    <h2>Your Instants</h2>
+                </div>
+
+                <button class="see-all" id="openInstants">
+                    See all
+                </button>
+
+            </div>
+
+
+            <div class="friends-strip">
+
+                <div class="friend-avatar has-instant">
+                    <div class="avatar avatar-one">A</div>
+                    <span>Ahmed</span>
+                </div>
+
+                <div class="friend-avatar has-instant">
+                    <div class="avatar avatar-two">M</div>
+                    <span>Mohamed</span>
+                </div>
+
+                <div class="friend-avatar has-instant">
+                    <div class="avatar avatar-three">Y</div>
+                    <span>Youssef</span>
+                </div>
+
+                <div class="friend-avatar has-instant">
+                    <div class="avatar avatar-four">O</div>
+                    <span>Omar</span>
+                </div>
+
+                <div class="friend-avatar">
+                    <div class="avatar avatar-five">A</div>
+                    <span>Ali</span>
+                </div>
+
+            </div>
+
+
+            <button class="instant-count" id="instantCount">
+
+                <div class="count-icon">
+                    ✦
+                </div>
+
+                <div class="count-text">
+                    <strong>4 new Instants</strong>
+                    <span>See what your friends are doing</span>
+                </div>
+
+                <span class="arrow">→</span>
+
+            </button>
+
+        </section>
+
+
+        <!-- =====================================
+             INSTANTS
+        ====================================== -->
+
+        <section class="screen" id="instantsScreen">
+
+            <div class="screen-header">
+
+                <button class="back-button" data-back="homeScreen">
+                    ←
+                </button>
+
+                <div>
+                    <p class="eyebrow">FRIENDS</p>
+                    <h1>Instants</h1>
+                </div>
+
+                <div class="progress-count">
+                    <span id="currentInstant">1</span>/4
+                </div>
+
+            </div>
+
+
+            <div class="card-area" id="cardArea">
+
+                <!-- Cards are generated by JavaScript -->
+
+            </div>
+
+
+            <div class="viewer-hint">
+                <span>←</span>
+                <p>Swipe right to see the next Instant</p>
+                <span>→</span>
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             FRIENDS
+        ====================================== -->
+
+        <section class="screen" id="friendsScreen">
+
+            <div class="screen-title">
+
+                <p class="eyebrow">SOCIAL</p>
+
+                <h1>Friends</h1>
+
+            </div>
+
+
+            <div class="search-box">
+
+                <span>⌕</span>
+
+                <input
+                    type="text"
+                    id="friendSearch"
+                    placeholder="Search people..."
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <div class="friend-tabs">
+
+                <button class="friend-tab active" data-tab="friends">
+                    Friends
+                </button>
+
+                <button class="friend-tab" data-tab="requests">
+                    Requests
+                    <span class="tab-badge">3</span>
+                </button>
+
+            </div>
+
+
+            <div id="friendsList" class="people-list">
+
+                <div class="person-row">
+
+                    <div class="avatar avatar-one">A</div>
+
+                    <div class="person-info">
+                        <strong>Ahmed Ali</strong>
+                        <span>@ahmed</span>
+                    </div>
+
+                    <span class="friend-status">Friends</span>
+
+                </div>
+
+
+                <div class="person-row">
+
+                    <div class="avatar avatar-two">M</div>
+
+                    <div class="person-info">
+                        <strong>Mohamed Samir</strong>
+                        <span>@mohamed</span>
+                    </div>
+
+                    <span class="friend-status">Friends</span>
+
+                </div>
+
+
+                <div class="person-row">
+
+                    <div class="avatar avatar-three">Y</div>
+
+                    <div class="person-info">
+                        <strong>Youssef Omar</strong>
+                        <span>@youssef</span>
+                    </div>
+
+                    <span class="friend-status">Friends</span>
+
+                </div>
+
+
+                <div class="person-row">
+
+                    <div class="avatar avatar-four">O</div>
+
+                    <div class="person-info">
+                        <strong>Omar Hassan</strong>
+                        <span>@omarh</span>
+                    </div>
+
+                    <span class="friend-status">Friends</span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             REQUESTS
+        ====================================== -->
+
+        <section class="screen" id="requestsScreen">
+
+            <div class="screen-header">
+
+                <button class="back-button" data-back="friendsScreen">
+                    ←
+                </button>
+
+                <div>
+                    <p class="eyebrow">SOCIAL</p>
+                    <h1>Requests</h1>
+                </div>
+
+            </div>
+
+
+            <div class="requests-list">
+
+                <div class="request-card">
+
+                    <div class="avatar avatar-five">K</div>
+
+                    <div class="person-info">
+                        <strong>Khaled</strong>
+                        <span>@khaled</span>
+                    </div>
+
+                    <div class="request-actions">
+                        <button class="accept-button">Accept</button>
+                        <button class="decline-button">×</button>
+                    </div>
+
+                </div>
+
+
+                <div class="request-card">
+
+                    <div class="avatar avatar-six">S</div>
+
+                    <div class="person-info">
+                        <strong>Salem</strong>
+                        <span>@salem</span>
+                    </div>
+
+                    <div class="request-actions">
+                        <button class="accept-button">Accept</button>
+                        <button class="decline-button">×</button>
+                    </div>
+
+                </div>
+
+
+                <div class="request-card">
+
+                    <div class="avatar avatar-seven">N</div>
+
+                    <div class="person-info">
+                        <strong>Nader</strong>
+                        <span>@nader</span>
+                    </div>
+
+                    <div class="request-actions">
+                        <button class="accept-button">Accept</button>
+                        <button class="decline-button">×</button>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             PROFILE
+        ====================================== -->
+
+        <section class="screen" id="profileScreen">
+
+            <div class="profile-top">
+
+                <button class="settings-button">
+                    ⚙
+                </button>
+
+            </div>
+
+
+            <div class="profile-header">
+
+                <div class="profile-avatar">
+                    O
+                </div>
+
+                <h1>Omar</h1>
+
+                <p>@omar</p>
+
+                <div class="profile-stats">
+
+                    <div>
+                        <strong>24</strong>
+                        <span>Friends</span>
+                    </div>
+
+                    <div>
+                        <strong>38</strong>
+                        <span>Instants</span>
+                    </div>
+
+                </div>
+
+                <button class="edit-profile-button">
+                    Edit profile
+                </button>
+
+            </div>
+
+
+            <div class="profile-section">
+
+                <div class="section-header">
+
+                    <div>
+                        <p class="eyebrow">YOUR MOMENTS</p>
+                        <h2>My Instants</h2>
+                    </div>
+
+                </div>
+
+
+                <div class="my-instant-preview">
+
+                    <div class="mini-instant">
+                        <span>📸</span>
+                        <small>Today</small>
+                    </div>
+
+                    <div class="mini-instant">
+                        <span>📸</span>
+                        <small>Yesterday</small>
+                    </div>
+
+                    <div class="mini-instant">
+                        <span>📸</span>
+                        <small>Aug 15</small>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================================
+         BOTTOM NAVIGATION
+    ========================================== -->
+
+    <nav class="bottom-nav">
+
+        <button class="nav-item active" data-screen="homeScreen">
+
+            <span class="nav-icon">⌂</span>
+            <span>Home</span>
+
+        </button>
+
+
+        <button class="nav-item" data-screen="instantsScreen">
+
+            <span class="nav-icon">✦</span>
+            <span>Instants</span>
+
+        </button>
+
+
+        <button class="nav-camera" id="navCamera">
+
+            <span>+</span>
+
+        </button>
+
+
+        <button class="nav-item" data-screen="friendsScreen">
+
+            <span class="nav-icon">♧</span>
+            <span>Friends</span>
+
+        </button>
+
+
+        <button class="nav-item" data-screen="profileScreen">
+
+            <span class="nav-icon">○</span>
+            <span>Profile</span>
+
+        </button>
+
+    </nav>
+
+
+    <!-- =========================================
+         CAPTURE MODAL
+    ========================================== -->
+
+    <div class="modal" id="captureModal">
+
+        <div class="modal-content">
+
+            <button class="modal-close" id="closeCapture">
+                ×
+            </button>
+
+            <div class="fake-camera">
+
+                <div class="fake-camera-message">
+                    <span>📷</span>
+
+                    <h2>Camera coming next</h2>
+
+                    <p>
+                        The real camera experience
+                        will be added in Phase 2.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="app.js"></script>
+
+</div>
+
+</body>
+</html>
