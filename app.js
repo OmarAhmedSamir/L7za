@@ -1,19 +1,22 @@
 /* =====================================================
-   L7ZA — PHASE 3
-   AUTH + CAMERA + REAL INSTANTS
+   L7ZA — PHASE 4
+   AUTH + CAMERA + REAL INSTANTS + ONE-TIME VIEW
 
-   FIXES:
-   - My Instants works independently from feed
-   - Own Instants always load
-   - Correct profile names
-   - Correct UUID handling
-   - Storage signed URLs
+   FEATURES
+   -----------------------------------------------------
+   - Authentication
+   - Profiles
+   - Camera
+   - Post Instants
    - 24-hour expiration
+   - Storage signed URLs
+   - One-time viewing per user
+   - Persistent instant views in Supabase
+   - Independent My Instants
+   - Correct UUID handling
    - Card stacking
    - Mobile / desktop swipe
-   - Vertical scrolling
-   - Camera
-   - Authentication
+   - Profile grid
 ===================================================== */
 
 
@@ -45,6 +48,9 @@ let instants = [];
 let myInstants = [];
 
 let currentIndex = 0;
+
+let loadingInstants = false;
+let loadingMyInstants = false;
 
 
 /* =====================================================
@@ -191,6 +197,7 @@ function showAuthMessage(
     if (type) {
         authMessage.classList.add(type);
     }
+
 }
 
 
@@ -205,6 +212,7 @@ function clearAuthMessage() {
 
     authMessage.className =
         "auth-message";
+
 }
 
 
@@ -254,6 +262,7 @@ function validateSignup() {
         displayName,
         username
     };
+
 }
 
 
@@ -377,7 +386,7 @@ async function signUp() {
 
         await loadCurrentProfile();
 
-        showMainApp();
+        await showMainApp();
 
     } catch (error) {
 
@@ -451,7 +460,7 @@ async function signIn() {
 
         await loadCurrentProfile();
 
-        showMainApp();
+        await showMainApp();
 
     } catch (error) {
 
@@ -706,6 +715,7 @@ async function loadCurrentProfile() {
     }
 
     updateProfileUI();
+
 }
 
 
@@ -1491,7 +1501,7 @@ if (retryCamera) {
 
 
 /* =====================================================
-   PREVIEW
+   PREVIEW ELEMENTS
 ===================================================== */
 
 const previewModal =
@@ -1767,11 +1777,6 @@ async function postInstant() {
             throw insertError;
         }
 
-
-        /* ---------------------------------------------
-           CLEAR PREVIEW
-        --------------------------------------------- */
-
         capturedImage.src = "";
 
         capturedImage.dataset.image =
@@ -1784,11 +1789,6 @@ async function postInstant() {
         document.body.style.overflow =
             "";
 
-
-        /* ---------------------------------------------
-           RELOAD BOTH
-        --------------------------------------------- */
-
         await Promise.allSettled([
 
             loadInstants(),
@@ -1797,38 +1797,13 @@ async function postInstant() {
 
         ]);
 
-
-        /* ---------------------------------------------
-           FIND NEW INSTANT
-        --------------------------------------------- */
-
-        if (insertedInstant?.id) {
-
-            const newIndex =
-                instants.findIndex(
-                    item =>
-                        item.id ===
-                        insertedInstant.id
-                );
-
-            if (newIndex !== -1) {
-
-                currentIndex =
-                    newIndex;
-
-            }
-
-        }
-
-
-        renderInstantCards();
+        currentIndex = 0;
 
         updateMyInstantCount();
 
         showScreen(
             "profileScreen"
         );
-
 
     } catch (error) {
 
@@ -1856,10 +1831,128 @@ async function postInstant() {
 
 
 /* =====================================================
+   GET ALREADY VIEWED INSTANT IDS
+===================================================== */
+
+async function getViewedInstantIds() {
+
+    if (!currentUser) {
+        return [];
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("instant_views")
+                .select(
+                    "instant_id"
+                )
+                .eq(
+                    "viewer_id",
+                    currentUser.id
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        return (
+            data || []
+        )
+        .map(
+            row =>
+                row.instant_id
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Load viewed Instants error:",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+/* =====================================================
+   MARK INSTANT AS VIEWED
+===================================================== */
+
+async function markInstantViewed(
+    instantId
+) {
+
+    if (
+        !currentUser ||
+        !instantId
+    ) {
+
+        return false;
+
+    }
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("instant_views")
+                .upsert(
+                    {
+
+                        instant_id:
+                            instantId,
+
+                        viewer_id:
+                            currentUser.id
+
+                    },
+                    {
+                        onConflict:
+                            "instant_id,viewer_id"
+                    }
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Mark viewed error:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* =====================================================
    FEED — LOAD INSTANTS
 ===================================================== */
 
 async function loadInstants() {
+
+    if (loadingInstants) {
+        return;
+    }
+
+    loadingInstants = true;
 
     if (!currentUser) {
 
@@ -1871,17 +1964,19 @@ async function loadInstants() {
 
         updateHomeInstantCount();
 
+        loadingInstants = false;
+
         return;
 
     }
 
     try {
 
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
+        const viewedIds =
+            await getViewedInstantIds();
+
+        let query =
+            supabaseClient
                 .from("instants")
                 .select(`
                     id,
@@ -1900,12 +1995,41 @@ async function loadInstants() {
                     "expires_at",
                     new Date().toISOString()
                 )
+                .neq(
+                    "user_id",
+                    currentUser.id
+                )
                 .order(
                     "created_at",
                     {
                         ascending: false
                     }
                 );
+
+        /*
+         * Supabase .not('id', 'in', ...)
+         * needs the UUID values formatted correctly.
+         */
+
+        if (viewedIds.length) {
+
+            const formattedIds =
+                `(${viewedIds.join(",")})`;
+
+            query =
+                query.not(
+                    "id",
+                    "in",
+                    formattedIds
+                );
+
+        }
+
+        const {
+            data,
+            error
+        } =
+            await query;
 
         if (error) {
             throw error;
@@ -1924,9 +2048,7 @@ async function loadInstants() {
                 )
             ];
 
-
         let profiles = [];
-
 
         if (userIds.length) {
 
@@ -1953,7 +2075,6 @@ async function loadInstants() {
 
         }
 
-
         const profileMap =
             new Map(
                 profiles.map(
@@ -1964,10 +2085,7 @@ async function loadInstants() {
                 )
             );
 
-
-        const processed =
-            [];
-
+        const processed = [];
 
         for (
             const instant of rows
@@ -1978,27 +2096,8 @@ async function loadInstants() {
                     instant.user_id
                 );
 
-
-            let usableProfile =
-                profile;
-
-
-            if (
-                !usableProfile &&
-                currentUser &&
-                instant.user_id ===
-                currentUser.id
-            ) {
-
-                usableProfile =
-                    currentProfile;
-
-            }
-
-
-            if (!usableProfile) {
-
-                usableProfile = {
+            const usableProfile =
+                profile || {
 
                     username:
                         "user",
@@ -2008,16 +2107,12 @@ async function loadInstants() {
 
                 };
 
-            }
-
-
-            const signedResult =
+            const signedUrl =
                 await getInstantImage(
                     instant.image_url
                 );
 
-
-            if (!signedResult) {
+            if (!signedUrl) {
 
                 console.warn(
                     "Skipping Instant because image could not be loaded:",
@@ -2025,9 +2120,7 @@ async function loadInstants() {
                 );
 
                 continue;
-
             }
-
 
             const displayName =
                 usableProfile.display_name ||
@@ -2036,7 +2129,6 @@ async function loadInstants() {
             const username =
                 usableProfile.username ||
                 "user";
-
 
             processed.push({
 
@@ -2066,7 +2158,7 @@ async function loadInstants() {
                     instant.caption || "",
 
                 image:
-                    signedResult,
+                    signedUrl,
 
                 likes:
                     0,
@@ -2075,8 +2167,7 @@ async function loadInstants() {
                     0,
 
                 mine:
-                    instant.user_id ===
-                    currentUser.id,
+                    false,
 
                 createdAt:
                     instant.created_at
@@ -2085,17 +2176,14 @@ async function loadInstants() {
 
         }
 
-
         processed.sort(
             (a, b) =>
                 new Date(b.createdAt) -
                 new Date(a.createdAt)
         );
 
-
         instants =
             processed;
-
 
         currentIndex =
             Math.min(
@@ -2106,11 +2194,9 @@ async function loadInstants() {
                 )
             );
 
-
         renderInstantCards();
 
         updateHomeInstantCount();
-
 
     } catch (error) {
 
@@ -2119,9 +2205,17 @@ async function loadInstants() {
             error
         );
 
+        instants = [];
+
+        currentIndex = 0;
+
         renderInstantCards();
 
         updateHomeInstantCount();
+
+    } finally {
+
+        loadingInstants = false;
 
     }
 
@@ -2129,7 +2223,7 @@ async function loadInstants() {
 
 
 /* =====================================================
-   MY INSTANTS — INDEPENDENT LOAD
+   MY INSTANTS
 ===================================================== */
 
 async function loadMyInstants() {
@@ -2143,6 +2237,11 @@ async function loadMyInstants() {
         return;
     }
 
+    if (loadingMyInstants) {
+        return;
+    }
+
+    loadingMyInstants = true;
 
     if (!currentUser) {
 
@@ -2152,19 +2251,13 @@ async function loadMyInstants() {
 
         updateMyInstantCount();
 
+        loadingMyInstants = false;
+
         return;
 
     }
 
-
     try {
-
-        /*
-         * IMPORTANT:
-         *
-         * This query is completely independent
-         * from the main feed.
-         */
 
         const {
             data,
@@ -2204,14 +2297,10 @@ async function loadMyInstants() {
             throw error;
         }
 
-
         const rows =
             data || [];
 
-
-        const processed =
-            [];
-
+        const processed = [];
 
         for (
             const instant of rows
@@ -2222,14 +2311,6 @@ async function loadMyInstants() {
                     instant.image_url
                 );
 
-
-            /*
-             * IMPORTANT:
-             *
-             * Even if an image cannot be signed,
-             * we continue loading the other Instants.
-             */
-
             if (!signedUrl) {
 
                 console.warn(
@@ -2238,9 +2319,7 @@ async function loadMyInstants() {
                 );
 
                 continue;
-
             }
-
 
             processed.push({
 
@@ -2276,15 +2355,12 @@ async function loadMyInstants() {
 
         }
 
-
         myInstants =
             processed;
-
 
         renderMyInstants();
 
         updateMyInstantCount();
-
 
     } catch (error) {
 
@@ -2298,6 +2374,10 @@ async function loadMyInstants() {
         renderMyInstants();
 
         updateMyInstantCount();
+
+    } finally {
+
+        loadingMyInstants = false;
 
     }
 
@@ -2341,7 +2421,8 @@ async function getInstantImage(
 
         }
 
-        return data?.signedUrl || null;
+        return data?.signedUrl ||
+            null;
 
     } catch (error) {
 
@@ -2372,7 +2453,6 @@ function renderMyInstants() {
         return;
     }
 
-
     if (!myInstants.length) {
 
         container.innerHTML = `
@@ -2399,90 +2479,52 @@ function renderMyInstants() {
 
     }
 
-
     container.innerHTML =
-        myInstants.map(
-            instant => {
+        myInstants
+            .map(
+                instant => {
 
-                const safeImage =
-                    escapeAttribute(
-                        instant.image
-                    );
+                    return `
 
-                return `
-
-                    <article
-                        class="my-instant-item"
-                        data-instant-id="${escapeHTML(instant.id)}"
-                    >
-
-                        <div
-                            class="my-instant-image"
-                            style="
-                                background-image:
-                                url('${safeImage}');
-                            "
+                        <article
+                            class="my-instant-item"
+                            data-instant-id="${escapeHTML(instant.id)}"
                         >
 
-                            <div class="my-instant-overlay">
+                            <div
+                                class="my-instant-image"
+                                style="
+                                    background-image:
+                                    url('${escapeAttribute(instant.image)}');
+                                "
+                            >
 
-                                <span>
-                                    ${escapeHTML(instant.time)}
-                                </span>
+                                <div class="my-instant-overlay">
+
+                                    <span>
+                                        ${escapeHTML(instant.time)}
+                                    </span>
+
+                                </div>
 
                             </div>
 
-                        </div>
+                        </article>
 
-                    </article>
-
-                `;
-
-            }
-        ).join("");
-
-
-    /*
-     * Open a My Instant in the main viewer.
-     */
-
-    container
-        .querySelectorAll(
-            ".my-instant-item"
-        )
-        .forEach(item => {
-
-            item.addEventListener(
-                "click",
-                () => {
-
-                    const id =
-                        item.dataset.instantId;
-
-                    const index =
-                        instants.findIndex(
-                            instant =>
-                                instant.id ===
-                                id
-                        );
-
-                    if (index !== -1) {
-
-                        currentIndex =
-                            index;
-
-                        renderInstantCards();
-
-                        showScreen(
-                            "instantsScreen"
-                        );
-
-                    }
+                    `;
 
                 }
-            );
+            )
+            .join("");
 
-        });
+    /*
+     * My Instants are displayed independently.
+     *
+     * We DO NOT use the main feed array here.
+     *
+     * This means your own Instants can always
+     * appear on your profile.
+     */
 
 }
 
@@ -2531,39 +2573,32 @@ function formatInstantTime(
             ) / 1000
         );
 
-
     if (seconds < 60) {
         return "just now";
     }
-
 
     const minutes =
         Math.floor(
             seconds / 60
         );
 
-
     if (minutes < 60) {
         return `${minutes}m ago`;
     }
-
 
     const hours =
         Math.floor(
             minutes / 60
         );
 
-
     if (hours < 24) {
         return `${hours}h ago`;
     }
-
 
     const days =
         Math.floor(
             hours / 24
         );
-
 
     return `${days}d ago`;
 
@@ -2640,9 +2675,7 @@ function renderInstantCards() {
         return;
     }
 
-
     cardArea.innerHTML = "";
-
 
     if (!instants.length) {
 
@@ -2653,7 +2686,6 @@ function renderInstantCards() {
         return;
 
     }
-
 
     if (
         currentIndex >=
@@ -2668,7 +2700,6 @@ function renderInstantCards() {
 
     }
 
-
     const cardsToRender =
         instants.slice(
             currentIndex,
@@ -2677,7 +2708,6 @@ function renderInstantCards() {
                 instants.length
             )
         );
-
 
     cardsToRender.forEach(
         (
@@ -2689,27 +2719,25 @@ function renderInstantCards() {
                 currentIndex +
                 relativeIndex;
 
-
             const card =
                 document.createElement(
                     "article"
                 );
 
-
             card.className =
                 "instant-card";
-
 
             card.dataset.index =
                 actualIndex;
 
+            card.dataset.instantId =
+                instant.id;
 
             card.style.zIndex =
                 String(
                     100 -
                     relativeIndex
                 );
-
 
             if (
                 relativeIndex === 1
@@ -2733,7 +2761,6 @@ function renderInstantCards() {
 
             }
 
-
             const safeName =
                 escapeHTML(
                     instant.name
@@ -2754,7 +2781,6 @@ function renderInstantCards() {
                     instant.avatar
                 );
 
-
             card.innerHTML = `
 
                 <div
@@ -2769,7 +2795,6 @@ function renderInstantCards() {
                         class="instant-gradient"
                     ></div>
 
-
                     <div
                         class="instant-info"
                     >
@@ -2783,7 +2808,6 @@ function renderInstantCards() {
                             >
                                 ${safeAvatar}
                             </div>
-
 
                             <div
                                 class="instant-user-text"
@@ -2803,7 +2827,6 @@ function renderInstantCards() {
 
                         </div>
 
-
                         ${
                             safeCaption
                                 ? `
@@ -2815,7 +2838,6 @@ function renderInstantCards() {
                                 `
                                 : ""
                         }
-
 
                         <div
                             class="instant-actions"
@@ -2837,7 +2859,6 @@ function renderInstantCards() {
 
                             </button>
 
-
                             <span
                                 class="seen-text"
                             >
@@ -2854,7 +2875,6 @@ function renderInstantCards() {
 
             `;
 
-
             cardArea.appendChild(
                 card
             );
@@ -2862,12 +2882,65 @@ function renderInstantCards() {
         }
     );
 
-
     setupCardInteractions();
 
     updateProgress();
 
-    markCurrentInstantSeen();
+    /*
+     * Important:
+     * We mark the current card as viewed
+     * ONLY after it has been rendered.
+     *
+     * Once successfully saved, it will not
+     * return after reload.
+     */
+
+    markCurrentCardViewed();
+
+}
+
+
+/* =====================================================
+   MARK CURRENT CARD VIEWED
+===================================================== */
+
+async function markCurrentCardViewed() {
+
+    if (
+        !currentUser ||
+        !instants[currentIndex]
+    ) {
+
+        return;
+
+    }
+
+    const instant =
+        instants[currentIndex];
+
+    if (instant._viewed) {
+        return;
+    }
+
+    instant._viewed =
+        true;
+
+    const success =
+        await markInstantViewed(
+            instant.id
+        );
+
+    if (!success) {
+
+        /*
+         * If saving failed, don't permanently
+         * remove it from the local feed.
+         */
+
+        instant._viewed =
+            false;
+
+    }
 
 }
 
@@ -2883,7 +2956,6 @@ function setupCardInteractions() {
             ".instant-card"
         );
 
-
     cards.forEach(card => {
 
         const cardIndex =
@@ -2891,11 +2963,9 @@ function setupCardInteractions() {
                 card.dataset.index
             );
 
-
         const isTopCard =
             cardIndex ===
             currentIndex;
-
 
         if (!isTopCard) {
 
@@ -2906,10 +2976,8 @@ function setupCardInteractions() {
 
         }
 
-
         card.style.touchAction =
             "pan-y";
-
 
         let startX = 0;
         let startY = 0;
@@ -2917,7 +2985,6 @@ function setupCardInteractions() {
 
         let dragging = false;
         let horizontalSwipe = false;
-
 
         card.addEventListener(
             "pointerdown",
@@ -2932,7 +2999,6 @@ function setupCardInteractions() {
                     return;
 
                 }
-
 
                 startX =
                     event.clientX;
@@ -2952,7 +3018,6 @@ function setupCardInteractions() {
             }
         );
 
-
         card.addEventListener(
             "pointermove",
             event => {
@@ -2961,7 +3026,6 @@ function setupCardInteractions() {
                     return;
                 }
 
-
                 const deltaX =
                     event.clientX -
                     startX;
@@ -2969,7 +3033,6 @@ function setupCardInteractions() {
                 const deltaY =
                     event.clientY -
                     startY;
-
 
                 if (
                     !horizontalSwipe &&
@@ -2985,7 +3048,6 @@ function setupCardInteractions() {
 
                 }
 
-
                 if (
                     !horizontalSwipe &&
                     Math.abs(deltaX) > 10 &&
@@ -2995,7 +3057,6 @@ function setupCardInteractions() {
 
                     horizontalSwipe =
                         true;
-
 
                     try {
 
@@ -3007,11 +3068,9 @@ function setupCardInteractions() {
 
                 }
 
-
                 if (!horizontalSwipe) {
                     return;
                 }
-
 
                 currentX =
                     Math.max(
@@ -3019,17 +3078,14 @@ function setupCardInteractions() {
                         deltaX
                     );
 
-
                 const rotation =
                     Math.min(
                         currentX / 12,
                         12
                     );
 
-
                 card.style.transition =
                     "none";
-
 
                 card.style.transform =
                     `
@@ -3040,7 +3096,6 @@ function setupCardInteractions() {
             }
         );
 
-
         card.addEventListener(
             "pointerup",
             event => {
@@ -3049,10 +3104,8 @@ function setupCardInteractions() {
                     return;
                 }
 
-
                 dragging =
                     false;
-
 
                 if (!horizontalSwipe) {
 
@@ -3063,7 +3116,6 @@ function setupCardInteractions() {
 
                 }
 
-
                 try {
 
                     card.releasePointerCapture(
@@ -3072,10 +3124,8 @@ function setupCardInteractions() {
 
                 } catch (error) {}
 
-
                 card.style.transition =
                     "";
-
 
                 if (
                     currentX >
@@ -3106,13 +3156,11 @@ function setupCardInteractions() {
 
                 }
 
-
                 currentX =
                     0;
 
             }
         );
-
 
         card.addEventListener(
             "pointercancel",
@@ -3148,12 +3196,10 @@ function setupCardInteractions() {
 
                     event.stopPropagation();
 
-
                     const index =
                         Number(
                             button.dataset.index
                         );
-
 
                     if (
                         !instants[index]
@@ -3162,7 +3208,6 @@ function setupCardInteractions() {
                         return;
 
                     }
-
 
                     if (
                         button.classList.contains(
@@ -3174,14 +3219,11 @@ function setupCardInteractions() {
 
                     }
 
-
                     instants[index].likes++;
-
 
                     button.classList.add(
                         "liked"
                     );
-
 
                     const icon =
                         button.querySelector(
@@ -3193,12 +3235,10 @@ function setupCardInteractions() {
                             "strong"
                         );
 
-
                     if (icon) {
                         icon.textContent =
                             "♥";
                     }
-
 
                     if (count) {
 
@@ -3219,7 +3259,7 @@ function setupCardInteractions() {
    SWIPE CARD
 ===================================================== */
 
-function swipeCard(card) {
+async function swipeCard(card) {
 
     card.style.transition =
         "transform .35s ease, opacity .35s ease";
@@ -3230,12 +3270,10 @@ function swipeCard(card) {
     card.style.opacity =
         "0";
 
-
     setTimeout(
-        () => {
+        async () => {
 
             currentIndex++;
-
 
             if (
                 currentIndex >=
@@ -3249,10 +3287,19 @@ function swipeCard(card) {
 
                 updateProgress();
 
+                /*
+                 * Refresh feed.
+                 *
+                 * This will query instant_views
+                 * and therefore keep already viewed
+                 * Instants hidden.
+                 */
+
+                await loadInstants();
+
                 return;
 
             }
-
 
             renderInstantCards();
 
@@ -3283,14 +3330,12 @@ function updateProgress() {
     const total =
         instants.length;
 
-
     if (totalInstants) {
 
         totalInstants.textContent =
             total;
 
     }
-
 
     if (!total) {
 
@@ -3305,13 +3350,11 @@ function updateProgress() {
 
     }
 
-
     const number =
         Math.min(
             currentIndex + 1,
             total
         );
-
 
     if (currentInstant) {
 
@@ -3319,47 +3362,6 @@ function updateProgress() {
             number;
 
     }
-
-}
-
-
-/* =====================================================
-   SEEN
-===================================================== */
-
-function markCurrentInstantSeen() {
-
-    if (
-        !instants[currentIndex]
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        instants[currentIndex].mine
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        instants[currentIndex]._seenMarked
-    ) {
-
-        return;
-
-    }
-
-
-    instants[currentIndex]._seenMarked =
-        true;
-
-    instants[currentIndex].seen++;
 
 }
 
@@ -3374,93 +3376,25 @@ function showFinishedState() {
         return;
     }
 
-
     cardArea.innerHTML = `
 
-        <div
-            style="
-                text-align:center;
-                color:#777;
-                padding:30px;
-            "
-        >
+        <div class="finished-state">
 
-            <div
-                style="
-                    font-size:45px;
-                    margin-bottom:18px;
-                "
-            >
+            <div class="finished-icon">
                 ✦
             </div>
 
-
-            <h2
-                style="
-                    color:white;
-                    margin-bottom:8px;
-                "
-            >
+            <h2>
                 You're all caught up
             </h2>
 
-
-            <p
-                style="
-                    font-size:11px;
-                    line-height:1.6;
-                "
-            >
-                No more Instants from your friends.
+            <p>
+                You've seen all available Instants.
             </p>
-
-
-            <button
-                id="resetInstants"
-                type="button"
-                style="
-                    margin-top:20px;
-                    height:40px;
-                    padding:0 18px;
-                    border:none;
-                    border-radius:12px;
-                    background:white;
-                    color:black;
-                    font-family:inherit;
-                    font-size:10px;
-                    font-weight:600;
-                    cursor:pointer;
-                "
-            >
-                View again
-            </button>
 
         </div>
 
     `;
-
-
-    const reset =
-        document.getElementById(
-            "resetInstants"
-        );
-
-
-    if (reset) {
-
-        reset.addEventListener(
-            "click",
-            () => {
-
-                currentIndex =
-                    0;
-
-                renderInstantCards();
-
-            }
-        );
-
-    }
 
 }
 
@@ -3530,10 +3464,8 @@ function updateHomeInstantCount() {
         return;
     }
 
-
     const count =
         instants.length;
-
 
     instantCountTitle.textContent =
         `${count} new Instant${
@@ -3553,7 +3485,6 @@ const requestsButton =
     document.getElementById(
         "requestsButton"
     );
-
 
 if (requestsButton) {
 
@@ -3580,7 +3511,6 @@ const friendSearch =
         "friendSearch"
     );
 
-
 if (friendSearch) {
 
     friendSearch.addEventListener(
@@ -3592,19 +3522,16 @@ if (friendSearch) {
                     .toLowerCase()
                     .trim();
 
-
             const people =
                 document.querySelectorAll(
                     ".person-row"
                 );
-
 
             people.forEach(person => {
 
                 const text =
                     person.textContent
                         .toLowerCase();
-
 
                 person.style.display =
                     text.includes(query)
@@ -3644,11 +3571,9 @@ document
                             )
                     );
 
-
                 tab.classList.add(
                     "active"
                 );
-
 
                 if (
                     tab.dataset.tab ===
@@ -3684,7 +3609,6 @@ document.addEventListener(
 
         }
 
-
         if (
             previewModal &&
             previewModal.classList.contains(
@@ -3697,7 +3621,6 @@ document.addEventListener(
             return;
 
         }
-
 
         if (
             captureModal &&
@@ -3744,7 +3667,6 @@ window.addEventListener(
             return;
         }
 
-
         if (
             captureModal &&
             captureModal.classList.contains(
@@ -3755,7 +3677,6 @@ window.addEventListener(
             return;
 
         }
-
 
         loadInstants();
 
@@ -3772,4 +3693,3 @@ window.addEventListener(
 setAuthMode("login");
 
 initializeAuth();
-
