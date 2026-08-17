@@ -1,55 +1,55 @@
 /* =====================================================
-   L7ZA — COMPLETE APP.JS
+   L7ZA — COMPLETE APP.JS (WITH FRIENDS ONLY & SEEN TRACKING)
 ===================================================== */
 
 /* =====================================================
    SUPABASE CONFIG
 ===================================================== */
 
-const SUPABASE_URL = "https://ogxbaalnebmmqxneypuy.supabase.co"; //
-const SUPABASE_KEY = "sb_publishable_ksfgbcVqNa6P8GRahVhDYA_KLK30bt7"; //[cite: 6]
+const SUPABASE_URL = "https://ogxbaalnebmmqxneypuy.supabase.co";[cite: 6]
+const SUPABASE_KEY = "sb_publishable_ksfgbcVqNa6P8GRahVhDYA_KLK30bt7";[cite: 6]
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); //[cite: 6]
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);[cite: 6]
 
 /* =====================================================
    GLOBAL STATE
 ===================================================== */
 
-let currentUser = null; //[cite: 6]
-let currentProfile = null; //[cite: 6]
+let currentUser = null;[cite: 6]
+let currentProfile = null;[cite: 6]
 
-let instants = []; //[cite: 6]
-let myInstants = []; //[cite: 6]
+let instants = [];[cite: 6]
+let myInstants = [];[cite: 6]
 
-let currentIndex = 0; //[cite: 6]
+let currentIndex = 0;[cite: 6]
 
-let friends = []; //[cite: 6]
-let friendRequests = []; //[cite: 6]
-let sentRequests = []; //[cite: 6]
+let friends = [];[cite: 6]
+let friendRequests = [];[cite: 6]
+let sentRequests = [];[cite: 6]
 
-let loadingInstants = false; //[cite: 6]
-let loadingMyInstants = false; //[cite: 6]
-let loadingFriends = false; //[cite: 6]
-let loadingRequests = false; //[cite: 6]
+let loadingInstants = false;[cite: 6]
+let loadingMyInstants = false;[cite: 6]
+let loadingFriends = false;[cite: 6]
+let loadingRequests = false;[cite: 6]
 
 /* =====================================================
    AUTH ELEMENTS
 ===================================================== */
 
-const authScreen = document.getElementById("authScreen"); //[cite: 4, 6]
-const mainApp = document.getElementById("mainApp"); //[cite: 4, 6]
-const authTitle = document.getElementById("authTitle"); //[cite: 4, 6]
-const authSubtitle = document.getElementById("authSubtitle"); //[cite: 4, 6]
-const authSubmit = document.getElementById("authSubmit"); //[cite: 4, 6]
-const authSwitch = document.getElementById("authSwitch"); //[cite: 4, 6]
-const authMessage = document.getElementById("authMessage"); //[cite: 4, 6]
-const authEmail = document.getElementById("authEmail"); //[cite: 4, 6]
-const authPassword = document.getElementById("authPassword"); //[cite: 4, 6]
-const authDisplayName = document.getElementById("authDisplayName"); //[cite: 4, 6]
-const authUsername = document.getElementById("authUsername"); //[cite: 4, 6]
-const signupFields = document.querySelectorAll(".signup-only"); //[cite: 4, 6]
+const authScreen = document.getElementById("authScreen");[cite: 4, 6]
+const mainApp = document.getElementById("mainApp");[cite: 4, 6]
+const authTitle = document.getElementById("authTitle");[cite: 4, 6]
+const authSubtitle = document.getElementById("authSubtitle");[cite: 4, 6]
+const authSubmit = document.getElementById("authSubmit");[cite: 4, 6]
+const authSwitch = document.getElementById("authSwitch");[cite: 4, 6]
+const authMessage = document.getElementById("authMessage");[cite: 4, 6]
+const authEmail = document.getElementById("authEmail");[cite: 4, 6]
+const authPassword = document.getElementById("authPassword");[cite: 4, 6]
+const authDisplayName = document.getElementById("authDisplayName");[cite: 4, 6]
+const authUsername = document.getElementById("authUsername");[cite: 4, 6]
+const signupFields = document.querySelectorAll(".signup-only");[cite: 4, 6]
 
-let authMode = "login"; //[cite: 6]
+let authMode = "login";[cite: 6]
 
 /* =====================================================
    UTILITY HELPERS
@@ -79,93 +79,93 @@ function formatTimeAgo(dateString) {
 ===================================================== */
 
 function setAuthMode(mode) {
-    authMode = mode; //[cite: 6]
-    clearAuthMessage(); //[cite: 6]
+    authMode = mode;[cite: 6]
+    clearAuthMessage();[cite: 6]
 
-    if (mode === "signup") { //[cite: 6]
-        authTitle.textContent = "Create your account."; //[cite: 6]
-        authSubtitle.textContent = "Join L7za and start sharing real moments."; //[cite: 6]
-        authSubmit.textContent = "Create account"; //[cite: 6]
-        authSwitch.innerHTML = `Already have an account? <strong>Sign in</strong>`; //[cite: 6]
-        signupFields.forEach(field => field.style.display = "block"); //[cite: 6]
-        authPassword.autocomplete = "new-password"; //[cite: 6]
+    if (mode === "signup") {[cite: 6]
+        authTitle.textContent = "Create your account.";[cite: 6]
+        authSubtitle.textContent = "Join L7za and start sharing real moments.";[cite: 6]
+        authSubmit.textContent = "Create account";[cite: 6]
+        authSwitch.innerHTML = `Already have an account? <strong>Sign in</strong>`;[cite: 6]
+        signupFields.forEach(field => field.style.display = "block");[cite: 6]
+        authPassword.autocomplete = "new-password";[cite: 6]
     } else {
-        authTitle.textContent = "Welcome back."; //[cite: 6]
-        authSubtitle.textContent = "Sign in to see what your friends are doing."; //[cite: 6]
-        authSubmit.textContent = "Sign in"; //[cite: 6]
-        authSwitch.innerHTML = `Don't have an account? <strong>Sign up</strong>`; //[cite: 6]
-        signupFields.forEach(field => field.style.display = "none"); //[cite: 6]
-        authPassword.autocomplete = "current-password"; //[cite: 6]
+        authTitle.textContent = "Welcome back.";[cite: 6]
+        authSubtitle.textContent = "Sign in to see what your friends are doing.";[cite: 6]
+        authSubmit.textContent = "Sign in";[cite: 6]
+        authSwitch.innerHTML = `Don't have an account? <strong>Sign up</strong>`;[cite: 6]
+        signupFields.forEach(field => field.style.display = "none");[cite: 6]
+        authPassword.autocomplete = "current-password";[cite: 6]
     }
 }
 
 if (authSwitch) {
     authSwitch.addEventListener("click", () => {
-        setAuthMode(authMode === "login" ? "signup" : "login"); //[cite: 6]
+        setAuthMode(authMode === "login" ? "signup" : "login");[cite: 6]
     });
 }
 
 function showAuthMessage(message, type = "") {
-    if (!authMessage) return; //[cite: 6]
-    authMessage.textContent = message; //[cite: 6]
-    authMessage.className = "auth-message"; //[cite: 6]
-    if (type) authMessage.classList.add(type); //[cite: 6]
+    if (!authMessage) return;[cite: 6]
+    authMessage.textContent = message;[cite: 6]
+    authMessage.className = "auth-message";[cite: 6]
+    if (type) authMessage.classList.add(type);[cite: 6]
 }
 
 function clearAuthMessage() {
-    if (!authMessage) return; //[cite: 6]
-    authMessage.textContent = ""; //[cite: 6]
-    authMessage.className = "auth-message"; //[cite: 6]
+    if (!authMessage) return;[cite: 6]
+    authMessage.textContent = "";[cite: 6]
+    authMessage.className = "auth-message";[cite: 6]
 }
 
 function validateUsername(username) {
-    return /^[a-zA-Z0-9_]{3,24}$/.test(username); //[cite: 6]
+    return /^[a-zA-Z0-9_]{3,24}$/.test(username);[cite: 6]
 }
 
 function validateSignup() {
-    const displayName = authDisplayName.value.trim(); //[cite: 6]
-    const username = authUsername.value.trim().toLowerCase(); //[cite: 6]
+    const displayName = authDisplayName.value.trim();[cite: 6]
+    const username = authUsername.value.trim().toLowerCase();[cite: 6]
 
     if (!displayName) {
-        showAuthMessage("Please enter your name.", "error"); //[cite: 6]
+        showAuthMessage("Please enter your name.", "error");[cite: 6]
         return null;
     }
     if (!validateUsername(username)) {
-        showAuthMessage("Username must be 3–24 characters using letters, numbers, or _.", "error"); //[cite: 6]
+        showAuthMessage("Username must be 3–24 characters using letters, numbers, or _.", "error");[cite: 6]
         return null;
     }
-    return { displayName, username }; //[cite: 6]
+    return { displayName, username };[cite: 6]
 }
 
 async function signUp() {
-    clearAuthMessage(); //[cite: 6]
-    const signup = validateSignup(); //[cite: 6]
+    clearAuthMessage();[cite: 6]
+    const signup = validateSignup();[cite: 6]
     if (!signup) return;
 
-    const email = authEmail.value.trim().toLowerCase(); //[cite: 6]
-    const password = authPassword.value; //[cite: 6]
+    const email = authEmail.value.trim().toLowerCase();[cite: 6]
+    const password = authPassword.value;[cite: 6]
 
     if (!email) {
-        showAuthMessage("Please enter your email.", "error"); //[cite: 6]
+        showAuthMessage("Please enter your email.", "error");[cite: 6]
         return;
     }
     if (password.length < 6) {
-        showAuthMessage("Password must be at least 6 characters.", "error"); //[cite: 6]
+        showAuthMessage("Password must be at least 6 characters.", "error");[cite: 6]
         return;
     }
 
-    setAuthLoading(true); //[cite: 6]
+    setAuthLoading(true);[cite: 6]
 
     try {
         const { data: existingProfile, error: usernameError } = await supabaseClient
             .from("profiles")
             .select("id")
             .eq("username", signup.username)
-            .maybeSingle(); //[cite: 6]
+            .maybeSingle();[cite: 6]
 
-        if (usernameError) throw usernameError; //[cite: 6]
+        if (usernameError) throw usernameError;[cite: 6]
         if (existingProfile) {
-            showAuthMessage("That username is already taken.", "error"); //[cite: 6]
+            showAuthMessage("That username is already taken.", "error");[cite: 6]
             return;
         }
 
@@ -178,93 +178,93 @@ async function signUp() {
                     display_name: signup.displayName
                 }
             }
-        }); //[cite: 6]
+        });[cite: 6]
 
-        if (error) throw error; //[cite: 6]
+        if (error) throw error;[cite: 6]
 
         if (!data.session) {
-            showAuthMessage("Account created. Check your email to confirm your account.", "success"); //[cite: 6]
-            authPassword.value = ""; //[cite: 6]
+            showAuthMessage("Account created. Check your email to confirm your account.", "success");[cite: 6]
+            authPassword.value = "";[cite: 6]
             return;
         }
 
-        currentUser = data.user; //[cite: 6]
-        await loadCurrentProfile(); //[cite: 6]
-        await showMainApp(); //[cite: 6]
+        currentUser = data.user;[cite: 6]
+        await loadCurrentProfile();[cite: 6]
+        await showMainApp();[cite: 6]
     } catch (error) {
-        console.error("Sign up error:", error); //[cite: 6]
-        showAuthMessage(getAuthErrorMessage(error), "error"); //[cite: 6]
+        console.error("Sign up error:", error);[cite: 6]
+        showAuthMessage(getAuthErrorMessage(error), "error");[cite: 6]
     } finally {
-        setAuthLoading(false); //[cite: 6]
+        setAuthLoading(false);[cite: 6]
     }
 }
 
 async function signIn() {
-    clearAuthMessage(); //[cite: 6]
-    const email = authEmail.value.trim().toLowerCase(); //[cite: 6]
-    const password = authPassword.value; //[cite: 6]
+    clearAuthMessage();[cite: 6]
+    const email = authEmail.value.trim().toLowerCase();[cite: 6]
+    const password = authPassword.value;[cite: 6]
 
     if (!email || !password) {
-        showAuthMessage("Please enter your email and password.", "error"); //[cite: 6]
+        showAuthMessage("Please enter your email and password.", "error");[cite: 6]
         return;
     }
 
-    setAuthLoading(true); //[cite: 6]
+    setAuthLoading(true);[cite: 6]
 
     try {
         const { data, error } = await supabaseClient.auth.signInWithPassword({
             email,
             password
-        }); //[cite: 6]
+        });[cite: 6]
 
-        if (error) throw error; //[cite: 6]
+        if (error) throw error;[cite: 6]
 
-        currentUser = data.user; //[cite: 6]
-        await loadCurrentProfile(); //[cite: 6]
-        await showMainApp(); //[cite: 6]
+        currentUser = data.user;[cite: 6]
+        await loadCurrentProfile();[cite: 6]
+        await showMainApp();[cite: 6]
     } catch (error) {
-        console.error("Sign in error:", error); //[cite: 6]
-        showAuthMessage(getAuthErrorMessage(error), "error"); //[cite: 6]
+        console.error("Sign in error:", error);[cite: 6]
+        showAuthMessage(getAuthErrorMessage(error), "error");[cite: 6]
     } finally {
-        setAuthLoading(false); //[cite: 6]
+        setAuthLoading(false);[cite: 6]
     }
 }
 
 if (authSubmit) {
     authSubmit.addEventListener("click", async () => {
         if (authMode === "signup") {
-            await signUp(); //[cite: 6]
+            await signUp();[cite: 6]
         } else {
-            await signIn(); //[cite: 6]
+            await signIn();[cite: 6]
         }
     });
 }
 
 [authEmail, authPassword, authDisplayName, authUsername].forEach(input => {
-    if (!input) return; //[cite: 6]
+    if (!input) return;[cite: 6]
     input.addEventListener("keydown", event => {
-        if (event.key === "Enter") authSubmit.click(); //[cite: 6]
+        if (event.key === "Enter") authSubmit.click();[cite: 6]
     });
 });
 
 function setAuthLoading(loading) {
-    if (!authSubmit) return; //[cite: 6]
-    authSubmit.disabled = loading; //[cite: 6]
+    if (!authSubmit) return;[cite: 6]
+    authSubmit.disabled = loading;[cite: 6]
     authSubmit.textContent = loading
         ? (authMode === "signup" ? "Creating account..." : "Signing in...")
-        : (authMode === "signup" ? "Create account" : "Sign in"); //[cite: 6]
+        : (authMode === "signup" ? "Create account" : "Sign in");[cite: 6]
 }
 
 function getAuthErrorMessage(error) {
-    const message = error?.message || ""; //[cite: 6]
-    const lower = message.toLowerCase(); //[cite: 6]
+    const message = error?.message || "";[cite: 6]
+    const lower = message.toLowerCase();[cite: 6]
 
-    if (lower.includes("invalid login credentials")) return "Incorrect email or password."; //[cite: 6]
-    if (lower.includes("email not confirmed")) return "Please confirm your email before signing in."; //[cite: 6]
-    if (lower.includes("user already registered")) return "An account with this email already exists."; //[cite: 6]
-    if (lower.includes("password should be at least")) return "Your password is too short."; //[cite: 6]
+    if (lower.includes("invalid login credentials")) return "Incorrect email or password.";[cite: 6]
+    if (lower.includes("email not confirmed")) return "Please confirm your email before signing in.";[cite: 6]
+    if (lower.includes("user already registered")) return "An account with this email already exists.";[cite: 6]
+    if (lower.includes("password should be at least")) return "Your password is too short.";[cite: 6]
 
-    return message || "Something went wrong. Please try again."; //[cite: 6]
+    return message || "Something went wrong. Please try again.";[cite: 6]
 }
 
 /* =====================================================
@@ -272,25 +272,25 @@ function getAuthErrorMessage(error) {
 ===================================================== */
 
 async function loadCurrentProfile() {
-    if (!currentUser) return; //[cite: 6]
+    if (!currentUser) return;[cite: 6]
 
     const { data, error } = await supabaseClient
         .from("profiles")
         .select("*")
         .eq("id", currentUser.id)
-        .maybeSingle(); //[cite: 6]
+        .maybeSingle();[cite: 6]
 
     if (error) {
-        console.error("Profile error:", error); //[cite: 6]
+        console.error("Profile error:", error);[cite: 6]
         return;
     }
 
-    currentProfile = data; //[cite: 6]
+    currentProfile = data;[cite: 6]
 
     if (!currentProfile) {
-        const metadata = currentUser.user_metadata || {}; //[cite: 6]
-        const username = metadata.username || `user_${currentUser.id.slice(0, 8)}`; //[cite: 6]
-        const displayName = metadata.display_name || "New User"; //[cite: 6]
+        const metadata = currentUser.user_metadata || {};[cite: 6]
+        const username = metadata.username || `user_${currentUser.id.slice(0, 8)}`;[cite: 6]
+        const displayName = metadata.display_name || "New User";[cite: 6]
 
         const { data: createdProfile, error: createError } = await supabaseClient
             .from("profiles")
@@ -300,31 +300,31 @@ async function loadCurrentProfile() {
                 display_name: displayName
             })
             .select()
-            .single(); //[cite: 6]
+            .single();[cite: 6]
 
         if (createError) {
-            console.error("Create profile error:", createError); //[cite: 6]
+            console.error("Create profile error:", createError);[cite: 6]
             return;
         }
-        currentProfile = createdProfile; //[cite: 6]
+        currentProfile = createdProfile;[cite: 6]
     }
 
-    updateProfileUI(); //[cite: 6]
+    updateProfileUI();[cite: 6]
 }
 
 function updateProfileUI() {
-    if (!currentProfile) return; //[cite: 6]
+    if (!currentProfile) return;[cite: 6]
 
-    const name = currentProfile.display_name || "User"; //[cite: 6]
-    const username = currentProfile.username || "user"; //[cite: 6]
+    const name = currentProfile.display_name || "User";[cite: 6]
+    const username = currentProfile.username || "user";[cite: 6]
 
-    const profileName = document.getElementById("profileName"); //[cite: 4, 6]
-    const profileUsername = document.getElementById("profileUsername"); //[cite: 4, 6]
-    const profileAvatar = document.getElementById("profileAvatar"); //[cite: 4, 6]
+    const profileName = document.getElementById("profileName");[cite: 4, 6]
+    const profileUsername = document.getElementById("profileUsername");[cite: 4, 6]
+    const profileAvatar = document.getElementById("profileAvatar");[cite: 4, 6]
 
-    if (profileName) profileName.textContent = name; //[cite: 6]
-    if (profileUsername) profileUsername.textContent = `@${username}`; //[cite: 6]
-    if (profileAvatar) profileAvatar.textContent = name.charAt(0).toUpperCase(); //[cite: 6]
+    if (profileName) profileName.textContent = name;[cite: 6]
+    if (profileUsername) profileUsername.textContent = `@${username}`;[cite: 6]
+    if (profileAvatar) profileAvatar.textContent = name.charAt(0).toUpperCase();[cite: 6]
 }
 
 /* =====================================================
@@ -332,112 +332,112 @@ function updateProfileUI() {
 ===================================================== */
 
 async function showMainApp() {
-    if (authScreen) authScreen.classList.add("hidden"); //[cite: 6]
-    if (mainApp) mainApp.classList.remove("hidden"); //[cite: 6]
+    if (authScreen) authScreen.classList.add("hidden");[cite: 6]
+    if (mainApp) mainApp.classList.remove("hidden");[cite: 6]
 
-    document.body.style.overflow = ""; //[cite: 6]
-    updateProfileUI(); //[cite: 6]
-    showScreen("homeScreen"); //[cite: 6]
+    document.body.style.overflow = "";[cite: 6]
+    updateProfileUI();[cite: 6]
+    showScreen("homeScreen");[cite: 6]
 
-    await loadSocialData(); //[cite: 6]
-    await Promise.allSettled([loadInstants(), loadMyInstants()]); //[cite: 6]
+    await loadSocialData();[cite: 6]
+    await Promise.allSettled([loadInstants(), loadMyInstants()]);[cite: 6]
 }
 
 function showAuth() {
-    stopCamera(); //[cite: 6]
-    if (captureModal) captureModal.classList.remove("show"); //[cite: 6]
-    if (previewModal) previewModal.classList.remove("show"); //[cite: 6]
-    if (mainApp) mainApp.classList.add("hidden"); //[cite: 6]
-    if (authScreen) authScreen.classList.remove("hidden"); //[cite: 6]
+    stopCamera();[cite: 6]
+    if (captureModal) captureModal.classList.remove("show");[cite: 6]
+    if (previewModal) previewModal.classList.remove("show");[cite: 6]
+    if (mainApp) mainApp.classList.add("hidden");[cite: 6]
+    if (authScreen) authScreen.classList.remove("hidden");[cite: 6]
 
-    document.body.style.overflow = ""; //[cite: 6]
-    setAuthMode("login"); //[cite: 6]
+    document.body.style.overflow = "";[cite: 6]
+    setAuthMode("login");[cite: 6]
 }
 
-const logoutButton = document.getElementById("logoutButton"); //[cite: 4, 6]
+const logoutButton = document.getElementById("logoutButton");[cite: 4, 6]
 if (logoutButton) {
     logoutButton.addEventListener("click", async () => {
         try {
-            await supabaseClient.auth.signOut(); //[cite: 6]
+            await supabaseClient.auth.signOut();[cite: 6]
         } catch (error) {
-            console.error("Logout error:", error); //[cite: 6]
+            console.error("Logout error:", error);[cite: 6]
         }
-        resetState(); //[cite: 6]
-        showAuth(); //[cite: 6]
+        resetState();[cite: 6]
+        showAuth();[cite: 6]
     });
 }
 
 function resetState() {
-    currentUser = null; //[cite: 6]
-    currentProfile = null; //[cite: 6]
-    instants = []; //[cite: 6]
-    myInstants = []; //[cite: 6]
-    friends = []; //[cite: 6]
-    friendRequests = []; //[cite: 6]
-    sentRequests = []; //[cite: 6]
-    currentIndex = 0; //[cite: 6]
+    currentUser = null;[cite: 6]
+    currentProfile = null;[cite: 6]
+    instants = [];[cite: 6]
+    myInstants = [];[cite: 6]
+    friends = [];[cite: 6]
+    friendRequests = [];[cite: 6]
+    sentRequests = [];[cite: 6]
+    currentIndex = 0;[cite: 6]
 }
 
 async function initializeAuth() {
     try {
-        const { data, error } = await supabaseClient.auth.getSession(); //[cite: 6]
-        if (error) throw error; //[cite: 6]
+        const { data, error } = await supabaseClient.auth.getSession();[cite: 6]
+        if (error) throw error;[cite: 6]
 
         if (data.session?.user) {
-            currentUser = data.session.user; //[cite: 6]
-            await loadCurrentProfile(); //[cite: 6]
-            await showMainApp(); //[cite: 6]
+            currentUser = data.session.user;[cite: 6]
+            await loadCurrentProfile();[cite: 6]
+            await showMainApp();[cite: 6]
         } else {
-            showAuth(); //[cite: 6]
+            showAuth();[cite: 6]
         }
     } catch (error) {
-        console.error("Session error:", error); //[cite: 6]
-        showAuth(); //[cite: 6]
+        console.error("Session error:", error);[cite: 6]
+        showAuth();[cite: 6]
     }
 }
 
 supabaseClient.auth.onAuthStateChange(async (event, session) => {
     if (event === "SIGNED_OUT") {
-        resetState(); //[cite: 6]
-        showAuth(); //[cite: 6]
+        resetState();[cite: 6]
+        showAuth();[cite: 6]
         return;
     }
     if (event === "SIGNED_IN" && session?.user) {
-        currentUser = session.user; //[cite: 6]
-        await loadCurrentProfile(); //[cite: 6]
-        await showMainApp(); //[cite: 6]
+        currentUser = session.user;[cite: 6]
+        await loadCurrentProfile();[cite: 6]
+        await showMainApp();[cite: 6]
     }
 });
 
-const screens = document.querySelectorAll(".screen"); //[cite: 4, 6]
-const navItems = document.querySelectorAll(".nav-item"); //[cite: 4, 6]
+const screens = document.querySelectorAll(".screen");[cite: 4, 6]
+const navItems = document.querySelectorAll(".nav-item");[cite: 4, 6]
 
 function showScreen(screenId) {
-    screens.forEach(screen => screen.classList.remove("active")); //[cite: 6]
-    const target = document.getElementById(screenId); //[cite: 4, 6]
-    if (target) target.classList.add("active"); //[cite: 6]
+    screens.forEach(screen => screen.classList.remove("active"));[cite: 6]
+    const target = document.getElementById(screenId);[cite: 4, 6]
+    if (target) target.classList.add("active");[cite: 6]
 
     navItems.forEach(item => {
-        item.classList.remove("active"); //[cite: 6]
-        if (item.dataset.screen === screenId) item.classList.add("active"); //[cite: 6]
+        item.classList.remove("active");[cite: 6]
+        if (item.dataset.screen === screenId) item.classList.add("active");[cite: 6]
     });
 
-    window.scrollTo({ top: 0, behavior: "auto" }); //[cite: 6]
+    window.scrollTo({ top: 0, behavior: "auto" });[cite: 6]
 
-    if (screenId === "friendsScreen" || screenId === "requestsScreen") loadSocialData(); //[cite: 6]
-    if (screenId === "profileScreen") loadMyInstants(); //[cite: 6]
+    if (screenId === "friendsScreen" || screenId === "requestsScreen") loadSocialData();[cite: 6]
+    if (screenId === "profileScreen") loadMyInstants();[cite: 6]
 }
 
 navItems.forEach(item => {
     item.addEventListener("click", () => {
-        const screen = item.dataset.screen; //[cite: 4, 6]
-        if (screen) showScreen(screen); //[cite: 6]
+        const screen = item.dataset.screen;[cite: 4, 6]
+        if (screen) showScreen(screen);[cite: 6]
     });
 });
 
 document.querySelectorAll(".back-button").forEach(button => {
     button.addEventListener("click", () => {
-        showScreen(button.dataset.back); //[cite: 4, 6]
+        showScreen(button.dataset.back);[cite: 4, 6]
     });
 });
 
@@ -446,26 +446,26 @@ document.querySelectorAll(".back-button").forEach(button => {
 ===================================================== */
 
 function friendshipStatusFor(userId) {
-    if (!currentUser || !userId) return "none"; //[cite: 6]
+    if (!currentUser || !userId) return "none";[cite: 6]
 
-    if (friends.some(item => item.userId === userId)) return "friends"; //[cite: 6]
-    if (friendRequests.some(item => item.requester_id === userId)) return "incoming"; //[cite: 6]
-    if (sentRequests.some(item => item.addressee_id === userId)) return "outgoing"; //[cite: 6]
+    if (friends.some(item => item.userId === userId)) return "friends";[cite: 6]
+    if (friendRequests.some(item => item.requester_id === userId)) return "incoming";[cite: 6]
+    if (sentRequests.some(item => item.addressee_id === userId)) return "outgoing";[cite: 6]
 
-    return "none"; //[cite: 6]
+    return "none";[cite: 6]
 }
 
 async function loadSocialData() {
-    if (!currentUser || loadingFriends) return; //[cite: 6]
-    loadingFriends = true; //[cite: 6]
+    if (!currentUser || loadingFriends) return;[cite: 6]
+    loadingFriends = true;[cite: 6]
 
     try {
         const { data, error } = await supabaseClient
             .from("friendships")
             .select("id, requester_id, addressee_id, status, created_at")
-            .or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`); //[cite: 6]
+            .or(`requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`);[cite: 6]
 
-        if (error) throw error; //[cite: 6]
+        if (error) throw error;[cite: 6]
 
         friends = [];
         friendRequests = [];
@@ -473,50 +473,50 @@ async function loadSocialData() {
 
         (data || []).forEach(row => {
             if (row.status === "accepted") {
-                const otherUserId = row.requester_id === currentUser.id ? row.addressee_id : row.requester_id; //[cite: 6]
-                friends.push({ id: row.id, userId: otherUserId, requesterId: row.requester_id, addresseeId: row.addressee_id }); //[cite: 6]
+                const otherUserId = row.requester_id === currentUser.id ? row.addressee_id : row.requester_id;[cite: 6]
+                friends.push({ id: row.id, userId: otherUserId, requesterId: row.requester_id, addresseeId: row.addressee_id });[cite: 6]
             } else if (row.status === "pending") {
-                if (row.addressee_id === currentUser.id) friendRequests.push(row); //[cite: 6]
-                else if (row.requester_id === currentUser.id) sentRequests.push(row); //[cite: 6]
+                if (row.addressee_id === currentUser.id) friendRequests.push(row);[cite: 6]
+                else if (row.requester_id === currentUser.id) sentRequests.push(row);[cite: 6]
             }
         });
 
-        updateFriendCount(); //[cite: 6]
-        updateRequestBadge(); //[cite: 6]
-        await renderFriendsList(); //[cite: 6]
-        await renderRequests(); //[cite: 6]
+        updateFriendCount();[cite: 6]
+        updateRequestBadge();[cite: 6]
+        await renderFriendsList();[cite: 6]
+        await renderRequests();[cite: 6]
     } catch (error) {
-        console.error("Load social data error:", error); //[cite: 6]
+        console.error("Load social data error:", error);[cite: 6]
     } finally {
-        loadingFriends = false; //[cite: 6]
+        loadingFriends = false;[cite: 6]
     }
 }
 
 function updateFriendCount() {
-    const element = document.getElementById("friendCount"); //[cite: 4, 6]
-    if (element) element.textContent = friends.length; //[cite: 6]
+    const element = document.getElementById("friendCount");[cite: 4, 6]
+    if (element) element.textContent = friends.length;[cite: 6]
 }
 
 function updateRequestBadge() {
-    const badge = document.getElementById("requestBadge"); //[cite: 4, 6]
-    if (badge) badge.textContent = friendRequests.length; //[cite: 6]
+    const badge = document.getElementById("requestBadge");[cite: 4, 6]
+    if (badge) badge.textContent = friendRequests.length;[cite: 6]
 
-    const dot = document.getElementById("notificationDot"); //[cite: 4, 6]
-    if (dot) dot.style.display = friendRequests.length ? "block" : "none"; //[cite: 6]
+    const dot = document.getElementById("notificationDot");[cite: 4, 6]
+    if (dot) dot.style.display = friendRequests.length ? "block" : "none";[cite: 6]
 }
 
-const friendSearch = document.getElementById("friendSearch"); //[cite: 4, 6]
+const friendSearch = document.getElementById("friendSearch");[cite: 4, 6]
 if (friendSearch) {
     friendSearch.addEventListener("input", async () => {
-        await renderFriendsList(friendSearch.value); //[cite: 6]
+        await renderFriendsList(friendSearch.value);[cite: 6]
     });
 }
 
 async function renderFriendsList(searchValue = "") {
-    const container = document.getElementById("friendsList"); //[cite: 4, 6]
-    if (!container) return; //[cite: 6]
+    const container = document.getElementById("friendsList");[cite: 4, 6]
+    if (!container) return;[cite: 6]
 
-    const query = String(searchValue || "").trim().toLowerCase(); //[cite: 6]
+    const query = String(searchValue || "").trim().toLowerCase();[cite: 6]
 
     try {
         let profiles = [];
@@ -527,28 +527,28 @@ async function renderFriendsList(searchValue = "") {
                 .select("id, username, display_name, avatar_url")
                 .neq("id", currentUser.id)
                 .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
-                .limit(30); //[cite: 6]
+                .limit(30);[cite: 6]
 
-            if (error) throw error; //[cite: 6]
-            profiles = data || []; //[cite: 6]
+            if (error) throw error;[cite: 6]
+            profiles = data || [];[cite: 6]
         } else {
-            const friendIds = friends.map(item => item.userId); //[cite: 6]
+            const friendIds = friends.map(item => item.userId);[cite: 6]
             if (!friendIds.length) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <strong>No friends yet</strong>
                         <span>Search for people to add them.</span>
-                    </div>`; //[cite: 6]
+                    </div>`;[cite: 6]
                 return;
             }
 
             const { data, error } = await supabaseClient
                 .from("profiles")
                 .select("id, username, display_name, avatar_url")
-                .in("id", friendIds); //[cite: 6]
+                .in("id", friendIds);[cite: 6]
 
-            if (error) throw error; //[cite: 6]
-            profiles = data || []; //[cite: 6]
+            if (error) throw error;[cite: 6]
+            profiles = data || [];[cite: 6]
         }
 
         if (!profiles.length) {
@@ -556,33 +556,33 @@ async function renderFriendsList(searchValue = "") {
                 <div class="empty-state">
                     <strong>No people found</strong>
                     <span>Try another username or name.</span>
-                </div>`; //[cite: 6]
+                </div>`;[cite: 6]
             return;
         }
 
-        container.innerHTML = profiles.map(profile => renderPersonRow(profile)).join(""); //[cite: 6]
-        attachFriendButtons(); //[cite: 6]
+        container.innerHTML = profiles.map(profile => renderPersonRow(profile)).join("");[cite: 6]
+        attachFriendButtons();[cite: 6]
     } catch (error) {
-        console.error("Render friends error:", error); //[cite: 6]
-        container.innerHTML = `<div class="empty-state">Unable to load people.</div>`; //[cite: 6]
+        console.error("Render friends error:", error);[cite: 6]
+        container.innerHTML = `<div class="empty-state">Unable to load people.</div>`;[cite: 6]
     }
 }
 
 function renderPersonRow(profile) {
-    const status = friendshipStatusFor(profile.id); //[cite: 6]
-    const name = escapeHTML(profile.display_name || "User"); //[cite: 6]
-    const username = escapeHTML(`@${profile.username || "user"}`); //[cite: 6]
-    const avatar = escapeHTML((profile.display_name || profile.username || "U").charAt(0).toUpperCase()); //[cite: 6]
+    const status = friendshipStatusFor(profile.id);[cite: 6]
+    const name = escapeHTML(profile.display_name || "User");[cite: 6]
+    const username = escapeHTML(`@${profile.username || "user"}`);[cite: 6]
+    const avatar = escapeHTML((profile.display_name || profile.username || "U").charAt(0).toUpperCase());[cite: 6]
 
     let buttonHTML = "";
     if (status === "friends") {
-        buttonHTML = `<button class="friend-action-button friends" data-user-id="${escapeHTML(profile.id)}" data-action="remove" type="button">Friends</button>`; //[cite: 6]
+        buttonHTML = `<button class="friend-action-button friends" data-user-id="${escapeHTML(profile.id)}" data-action="remove" type="button">Friends</button>`;[cite: 6]
     } else if (status === "outgoing") {
-        buttonHTML = `<button class="friend-action-button pending" data-user-id="${escapeHTML(profile.id)}" data-action="cancel" type="button">Pending</button>`; //[cite: 6]
+        buttonHTML = `<button class="friend-action-button pending" data-user-id="${escapeHTML(profile.id)}" data-action="cancel" type="button">Pending</button>`;[cite: 6]
     } else if (status === "incoming") {
-        buttonHTML = `<button class="friend-action-button accept" data-user-id="${escapeHTML(profile.id)}" data-action="accept" type="button">Accept</button>`; //[cite: 6]
+        buttonHTML = `<button class="friend-action-button accept" data-user-id="${escapeHTML(profile.id)}" data-action="accept" type="button">Accept</button>`;[cite: 6]
     } else {
-        buttonHTML = `<button class="friend-action-button add" data-user-id="${escapeHTML(profile.id)}" data-action="add" type="button">Add</button>`; //[cite: 6]
+        buttonHTML = `<button class="friend-action-button add" data-user-id="${escapeHTML(profile.id)}" data-action="add" type="button">Add</button>`;[cite: 6]
     }
 
     return `
@@ -593,7 +593,7 @@ function renderPersonRow(profile) {
                 <span>${username}</span>
             </div>
             ${buttonHTML}
-        </article>`; //[cite: 6]
+        </article>`;[cite: 6]
 }
 
 function attachFriendButtons() {
@@ -627,13 +627,14 @@ async function handleFriendAction(userId, action) {
                 .or(`and(requester_id.eq.${userId},addressee_id.eq.${currentUser.id}),and(requester_id.eq.${currentUser.id},addressee_id.eq.${userId})`);
         }
         await loadSocialData();
+        await loadInstants();
     } catch (err) {
         console.error("Friend action error:", err);
     }
 }
 
 async function renderRequests() {
-    const container = document.getElementById("requestsList"); //[cite: 4]
+    const container = document.getElementById("requestsList");[cite: 4]
     if (!container) return;
 
     if (!friendRequests.length) {
@@ -679,12 +680,12 @@ let mediaStream = null;
 let currentFacingMode = "environment";
 let selectedFilter = "original";
 
-const captureModal = document.getElementById("captureModal"); //[cite: 4]
-const previewModal = document.getElementById("previewModal"); //[cite: 4]
-const cameraVideo = document.getElementById("cameraVideo"); //[cite: 4]
-const cameraCanvas = document.getElementById("cameraCanvas"); //[cite: 4]
-const cameraError = document.getElementById("cameraError"); //[cite: 4]
-const capturedImage = document.getElementById("capturedImage"); //[cite: 4]
+const captureModal = document.getElementById("captureModal");[cite: 4]
+const previewModal = document.getElementById("previewModal");[cite: 4]
+const cameraVideo = document.getElementById("cameraVideo");[cite: 4]
+const cameraCanvas = document.getElementById("cameraCanvas");[cite: 4]
+const cameraError = document.getElementById("cameraError");[cite: 4]
+const capturedImage = document.getElementById("capturedImage");[cite: 4]
 
 async function startCamera() {
     if (!captureModal) return;
@@ -715,21 +716,21 @@ function stopCamera() {
     if (cameraVideo) cameraVideo.srcObject = null;
 }
 
-document.getElementById("captureButton")?.addEventListener("click", startCamera); //[cite: 4]
-document.getElementById("navCamera")?.addEventListener("click", startCamera); //[cite: 4]
+document.getElementById("captureButton")?.addEventListener("click", startCamera);[cite: 4]
+document.getElementById("navCamera")?.addEventListener("click", startCamera);[cite: 4]
 document.getElementById("closeCapture")?.addEventListener("click", () => {
     stopCamera();
     captureModal.classList.remove("show");
-}); //[cite: 4]
+});[cite: 4]
 document.getElementById("cancelCamera")?.addEventListener("click", () => {
     stopCamera();
     captureModal.classList.remove("show");
-}); //[cite: 4]
+});[cite: 4]
 document.getElementById("switchCamera")?.addEventListener("click", () => {
     currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
     startCamera();
-}); //[cite: 4]
-document.getElementById("retryCamera")?.addEventListener("click", startCamera); //[cite: 4]
+});[cite: 4]
+document.getElementById("retryCamera")?.addEventListener("click", startCamera);[cite: 4]
 
 document.querySelectorAll(".filter-chip").forEach(chip => {
     chip.addEventListener("click", () => {
@@ -738,7 +739,7 @@ document.querySelectorAll(".filter-chip").forEach(chip => {
         selectedFilter = chip.dataset.filter || "original";
         applyFilterToVideo(selectedFilter);
     });
-}); //[cite: 4]
+});[cite: 4]
 
 function applyFilterToVideo(filter) {
     if (!cameraVideo) return;
@@ -753,7 +754,7 @@ function applyFilterToVideo(filter) {
     cameraVideo.style.filter = filterStyles[filter] || "none";
 }
 
-document.getElementById("realCaptureButton")?.addEventListener("click", takePhoto); //[cite: 4]
+document.getElementById("realCaptureButton")?.addEventListener("click", takePhoto);[cite: 4]
 
 function takePhoto() {
     if (!cameraVideo || !cameraCanvas) return;
@@ -786,9 +787,9 @@ function takePhoto() {
 document.getElementById("discardButton")?.addEventListener("click", () => {
     if (previewModal) previewModal.classList.remove("show");
     startCamera();
-}); //[cite: 4]
+});[cite: 4]
 
-document.getElementById("postInstantButton")?.addEventListener("click", postInstant); //[cite: 4]
+document.getElementById("postInstantButton")?.addEventListener("click", postInstant);[cite: 4]
 
 async function postInstant() {
     if (!currentUser || !capturedImage?.src) return;
@@ -835,7 +836,7 @@ async function postInstant() {
 
     } catch (err) {
         console.error("Post instant error:", err);
-        alert("Failed to post Instant. Please check storage bucket permissions.");
+        alert("Failed to post Instant. Please ensure storage bucket is PUBLIC.");
     } finally {
         if (postBtn) {
             postBtn.disabled = false;
@@ -845,7 +846,7 @@ async function postInstant() {
 }
 
 /* =====================================================
-   INSTANTS DISPLAY & SWIPE STACK
+   INSTANTS DISPLAY & SEEN TRACKING (FRIENDS ONLY)
 ===================================================== */
 
 async function loadInstants() {
@@ -854,8 +855,24 @@ async function loadInstants() {
 
     try {
         const friendIds = friends.map(f => f.userId);
-        const allowedUserIds = [currentUser.id, ...friendIds];
 
+        if (!friendIds.length) {
+            instants = [];
+            renderFriendsStrip();
+            renderInstantsStack();
+            updateInstantCounts();
+            return;
+        }
+
+        // جلب المعرفات التي تمت رؤيتها سابقاً من قبل المستخدم الحالى
+        const { data: viewedData } = await supabaseClient
+            .from("instant_views")
+            .select("instant_id")
+            .eq("viewer_id", currentUser.id);
+
+        const viewedIds = new Set((viewedData || []).map(v => v.instant_id));
+
+        // جلب الصور الخاصة بالأصدقاء فقط
         const { data, error } = await supabaseClient
             .from("instants")
             .select(`
@@ -865,17 +882,23 @@ async function loadInstants() {
                 created_at,
                 profiles:user_id (id, username, display_name, avatar_url)
             `)
-            .in("user_id", allowedUserIds)
+            .in("user_id", friendIds)
             .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        instants = data || [];
+        // فلترة الصور وتخطي ما تمت رؤيته
+        instants = (data || []).filter(inst => !viewedIds.has(inst.id));
         currentIndex = 0;
 
         renderFriendsStrip();
         renderInstantsStack();
         updateInstantCounts();
+
+        // تسجيل أول صورة كمشاهدة فور عرضها
+        if (instants.length > 0) {
+            markInstantAsSeen(instants[0].id);
+        }
 
     } catch (err) {
         console.error("Load instants error:", err);
@@ -884,8 +907,22 @@ async function loadInstants() {
     }
 }
 
+async function markInstantAsSeen(instantId) {
+    if (!currentUser || !instantId) return;
+    try {
+        await supabaseClient
+            .from("instant_views")
+            .upsert({
+                instant_id: instantId,
+                viewer_id: currentUser.id
+            }, { onConflict: 'instant_id,viewer_id' });
+    } catch (err) {
+        console.error("Error marking instant as seen:", err);
+    }
+}
+
 function renderFriendsStrip() {
-    const strip = document.getElementById("friendsStrip"); //[cite: 4]
+    const strip = document.getElementById("friendsStrip");[cite: 4]
     if (!strip) return;
 
     if (!friends.length) {
@@ -905,27 +942,27 @@ function renderFriendsStrip() {
 }
 
 function updateInstantCounts() {
-    const titleEl = document.getElementById("instantCountTitle"); //[cite: 4]
+    const titleEl = document.getElementById("instantCountTitle");[cite: 4]
     if (titleEl) {
         titleEl.textContent = `${instants.length} new Instant${instants.length === 1 ? "" : "s"}`;
     }
 
-    const currentEl = document.getElementById("currentInstant"); //[cite: 4]
-    const totalEl = document.getElementById("totalInstants"); //[cite: 4]
+    const currentEl = document.getElementById("currentInstant");[cite: 4]
+    const totalEl = document.getElementById("totalInstants");[cite: 4]
 
     if (currentEl) currentEl.textContent = instants.length ? currentIndex + 1 : 0;
     if (totalEl) totalEl.textContent = instants.length;
 }
 
 function renderInstantsStack() {
-    const container = document.getElementById("cardArea"); //[cite: 4]
+    const container = document.getElementById("cardArea");[cite: 4]
     if (!container) return;
 
     if (!instants.length) {
         container.innerHTML = `
             <div class="empty-state">
-                <strong>No Instants yet</strong>
-                <span>Be the first to take a moment today!</span>
+                <strong>No unseen Instants</strong>
+                <span>All caught up! Check back later for new updates.</span>
             </div>`;
         return;
     }
@@ -959,7 +996,7 @@ function renderInstantsStack() {
 }
 
 function attachSwipeHandlers() {
-    const card = document.querySelector(".instant-card"); //[cite: 5]
+    const card = document.querySelector(".instant-card");[cite: 5]
     if (!card) return;
 
     let startX = 0;
@@ -983,7 +1020,12 @@ function attachSwipeHandlers() {
         if (Math.abs(currentX) > 100) {
             card.classList.add("swipe-right");
             setTimeout(() => {
-                currentIndex = (currentIndex + 1) % instants.length;
+                currentIndex++;
+                if (currentIndex < instants.length) {
+                    markInstantAsSeen(instants[currentIndex].id);
+                } else {
+                    instants = [];
+                }
                 renderInstantsStack();
                 updateInstantCounts();
             }, 300);
@@ -1020,10 +1062,10 @@ async function loadMyInstants() {
 
         myInstants = data || [];
 
-        const countEl = document.getElementById("myInstantCount"); //[cite: 4]
+        const countEl = document.getElementById("myInstantCount");[cite: 4]
         if (countEl) countEl.textContent = myInstants.length;
 
-        const grid = document.getElementById("myInstantPreview"); //[cite: 4]
+        const grid = document.getElementById("myInstantPreview");[cite: 4]
         if (!grid) return;
 
         if (!myInstants.length) {
@@ -1046,13 +1088,13 @@ async function loadMyInstants() {
     }
 }
 
-const editProfileModal = document.getElementById("editProfileModal"); //[cite: 4]
-const editProfileButton = document.getElementById("editProfileButton"); //[cite: 4]
-const closeEditProfile = document.getElementById("closeEditProfile"); //[cite: 4]
-const saveProfileButton = document.getElementById("saveProfileButton"); //[cite: 4]
-const editDisplayName = document.getElementById("editDisplayName"); //[cite: 4]
-const editUsername = document.getElementById("editUsername"); //[cite: 4]
-const editProfileMessage = document.getElementById("editProfileMessage"); //[cite: 4]
+const editProfileModal = document.getElementById("editProfileModal");[cite: 4]
+const editProfileButton = document.getElementById("editProfileButton");[cite: 4]
+const closeEditProfile = document.getElementById("closeEditProfile");[cite: 4]
+const saveProfileButton = document.getElementById("saveProfileButton");[cite: 4]
+const editDisplayName = document.getElementById("editDisplayName");[cite: 4]
+const editUsername = document.getElementById("editUsername");[cite: 4]
+const editProfileMessage = document.getElementById("editProfileMessage");[cite: 4]
 
 if (editProfileButton) {
     editProfileButton.addEventListener("click", () => {
@@ -1112,5 +1154,5 @@ if (saveProfileButton) {
 ===================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-    initializeAuth(); //[cite: 6]
+    initializeAuth();[cite: 6]
 });
