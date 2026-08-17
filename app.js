@@ -1,21 +1,23 @@
 /* =====================================================
    L7ZA — PHASE 4
-   COMPLETE VERSION
+   COMPLETE APP.JS
 
    AUTH
    PROFILES
+   FRIENDSHIPS
+   FRIEND REQUESTS
    CAMERA
    REAL INSTANTS
-   24-HOUR EXPIRATION
-   STORAGE SIGNED URLS
+   FRIEND-ONLY PRIVACY
+   LIKES
+   LIKERS
+   SEEN
+   VIEWERS
    ONE-TIME VIEW
-   REAL VIEWS
-   REAL LIKES
-   FRIENDSHIPS
    MY INSTANTS
+   STORAGE SIGNED URLS
    CARD STACKING
    SWIPE
-   PROFILE GRID
 ===================================================== */
 
 
@@ -48,16 +50,14 @@ let myInstants = [];
 
 let currentIndex = 0;
 
-let loadingInstants = false;
-let loadingMyInstants = false;
-
-let loadingFriends = false;
-
 let friends = [];
 let friendRequests = [];
-let sentFriendRequests = [];
+let sentRequests = [];
 
-let currentFriendSearch = "";
+let loadingInstants = false;
+let loadingMyInstants = false;
+let loadingFriends = false;
+let loadingRequests = false;
 
 
 /* =====================================================
@@ -131,10 +131,7 @@ function setAuthMode(mode) {
             `;
 
         signupFields.forEach(field => {
-
-            field.style.display =
-                "block";
-
+            field.style.display = "block";
         });
 
         authPassword.autocomplete =
@@ -158,15 +155,11 @@ function setAuthMode(mode) {
             `;
 
         signupFields.forEach(field => {
-
-            field.style.display =
-                "none";
-
+            field.style.display = "none";
         });
 
         authPassword.autocomplete =
             "current-password";
-
     }
 
 }
@@ -210,11 +203,7 @@ function showAuthMessage(
         "auth-message";
 
     if (type) {
-
-        authMessage.classList.add(
-            type
-        );
-
+        authMessage.classList.add(type);
     }
 
 }
@@ -265,7 +254,6 @@ function validateSignup() {
         );
 
         return null;
-
     }
 
     if (!validateUsername(username)) {
@@ -276,14 +264,11 @@ function validateSignup() {
         );
 
         return null;
-
     }
 
     return {
-
         displayName,
         username
-
     };
 
 }
@@ -320,7 +305,6 @@ async function signUp() {
         );
 
         return;
-
     }
 
     if (password.length < 6) {
@@ -331,7 +315,6 @@ async function signUp() {
         );
 
         return;
-
     }
 
     setAuthLoading(true);
@@ -363,7 +346,6 @@ async function signUp() {
             );
 
             return;
-
         }
 
         const {
@@ -405,7 +387,6 @@ async function signUp() {
             authPassword.value = "";
 
             return;
-
         }
 
         currentUser =
@@ -460,7 +441,6 @@ async function signIn() {
         );
 
         return;
-
     }
 
     setAuthLoading(true);
@@ -557,13 +537,8 @@ if (authSubmit) {
         "keydown",
         event => {
 
-            if (
-                event.key ===
-                "Enter"
-            ) {
-
+            if (event.key === "Enter") {
                 authSubmit.click();
-
             }
 
         }
@@ -695,7 +670,6 @@ async function loadCurrentProfile() {
         );
 
         return;
-
     }
 
     currentProfile =
@@ -704,8 +678,7 @@ async function loadCurrentProfile() {
     if (!currentProfile) {
 
         const metadata =
-            currentUser.user_metadata ||
-            {};
+            currentUser.user_metadata || {};
 
         const username =
             metadata.username ||
@@ -743,12 +716,10 @@ async function loadCurrentProfile() {
             );
 
             return;
-
         }
 
         currentProfile =
             createdProfile;
-
     }
 
     updateProfileUI();
@@ -790,10 +761,8 @@ function updateProfileUI() {
         );
 
     if (profileName) {
-
         profileName.textContent =
             name;
-
     }
 
     if (profileUsername) {
@@ -822,37 +791,26 @@ function updateProfileUI() {
 async function showMainApp() {
 
     if (authScreen) {
-
-        authScreen.classList.add(
-            "hidden"
-        );
-
+        authScreen.classList.add("hidden");
     }
 
     if (mainApp) {
-
-        mainApp.classList.remove(
-            "hidden"
-        );
-
+        mainApp.classList.remove("hidden");
     }
 
-    document.body.style.overflow =
-        "";
+    document.body.style.overflow = "";
 
     updateProfileUI();
 
-    showScreen(
-        "homeScreen"
-    );
+    showScreen("homeScreen");
+
+    await loadSocialData();
 
     await Promise.allSettled([
 
         loadInstants(),
 
-        loadMyInstants(),
-
-        loadFriendData()
+        loadMyInstants()
 
     ]);
 
@@ -868,43 +826,24 @@ function showAuth() {
     stopCamera();
 
     if (captureModal) {
-
-        captureModal.classList.remove(
-            "show"
-        );
-
+        captureModal.classList.remove("show");
     }
 
     if (previewModal) {
-
-        previewModal.classList.remove(
-            "show"
-        );
-
+        previewModal.classList.remove("show");
     }
 
     if (mainApp) {
-
-        mainApp.classList.add(
-            "hidden"
-        );
-
+        mainApp.classList.add("hidden");
     }
 
     if (authScreen) {
-
-        authScreen.classList.remove(
-            "hidden"
-        );
-
+        authScreen.classList.remove("hidden");
     }
 
-    document.body.style.overflow =
-        "";
+    document.body.style.overflow = "";
 
-    setAuthMode(
-        "login"
-    );
+    setAuthMode("login");
 
 }
 
@@ -938,34 +877,33 @@ if (logoutButton) {
 
             }
 
-            currentUser =
-                null;
-
-            currentProfile =
-                null;
-
-            instants =
-                [];
-
-            myInstants =
-                [];
-
-            friends =
-                [];
-
-            friendRequests =
-                [];
-
-            sentFriendRequests =
-                [];
-
-            currentIndex =
-                0;
+            resetState();
 
             showAuth();
 
         }
     );
+
+}
+
+
+/* =====================================================
+   RESET STATE
+===================================================== */
+
+function resetState() {
+
+    currentUser = null;
+    currentProfile = null;
+
+    instants = [];
+    myInstants = [];
+
+    friends = [];
+    friendRequests = [];
+    sentRequests = [];
+
+    currentIndex = 0;
 
 }
 
@@ -1031,34 +969,9 @@ supabaseClient.auth.onAuthStateChange(
         session
     ) => {
 
-        if (
-            event ===
-            "SIGNED_OUT"
-        ) {
+        if (event === "SIGNED_OUT") {
 
-            currentUser =
-                null;
-
-            currentProfile =
-                null;
-
-            instants =
-                [];
-
-            myInstants =
-                [];
-
-            friends =
-                [];
-
-            friendRequests =
-                [];
-
-            sentFriendRequests =
-                [];
-
-            currentIndex =
-                0;
+            resetState();
 
             showAuth();
 
@@ -1067,8 +980,7 @@ supabaseClient.auth.onAuthStateChange(
         }
 
         if (
-            event ===
-            "SIGNED_IN" &&
+            event === "SIGNED_IN" &&
             session?.user
         ) {
 
@@ -1102,15 +1014,13 @@ const navItems =
 
 function showScreen(screenId) {
 
-    screens.forEach(
-        screen => {
+    screens.forEach(screen => {
 
-            screen.classList.remove(
-                "active"
-            );
+        screen.classList.remove(
+            "active"
+        );
 
-        }
-    );
+    });
 
     const target =
         document.getElementById(
@@ -1125,34 +1035,47 @@ function showScreen(screenId) {
 
     }
 
-    navItems.forEach(
-        item => {
+    navItems.forEach(item => {
 
-            item.classList.remove(
+        item.classList.remove(
+            "active"
+        );
+
+        if (
+            item.dataset.screen ===
+            screenId
+        ) {
+
+            item.classList.add(
                 "active"
             );
 
-            if (
-                item.dataset.screen ===
-                screenId
-            ) {
-
-                item.classList.add(
-                    "active"
-                );
-
-            }
-
         }
-    );
-
-    window.scrollTo({
-
-        top: 0,
-
-        behavior: "auto"
 
     });
+
+    window.scrollTo({
+        top: 0,
+        behavior: "auto"
+    });
+
+    if (screenId === "friendsScreen") {
+
+        loadSocialData();
+
+    }
+
+    if (screenId === "requestsScreen") {
+
+        loadSocialData();
+
+    }
+
+    if (screenId === "profileScreen") {
+
+        loadMyInstants();
+
+    }
 
 }
 
@@ -1161,29 +1084,23 @@ function showScreen(screenId) {
    NAVIGATION
 ===================================================== */
 
-navItems.forEach(
-    item => {
+navItems.forEach(item => {
 
-        item.addEventListener(
-            "click",
-            () => {
+    item.addEventListener(
+        "click",
+        () => {
 
-                const screen =
-                    item.dataset.screen;
+            const screen =
+                item.dataset.screen;
 
-                if (screen) {
-
-                    showScreen(
-                        screen
-                    );
-
-                }
-
+            if (screen) {
+                showScreen(screen);
             }
-        );
 
-    }
-);
+        }
+    );
+
+});
 
 
 /* =====================================================
@@ -1191,25 +1108,1117 @@ navItems.forEach(
 ===================================================== */
 
 document
-    .querySelectorAll(
-        ".back-button"
-    )
-    .forEach(
-        button => {
+    .querySelectorAll(".back-button")
+    .forEach(button => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                showScreen(
+                    button.dataset.back
+                );
+
+            }
+        );
+
+    });
+
+
+/* =====================================================
+   FRIENDSHIP HELPERS
+===================================================== */
+
+function friendshipStatusFor(
+    userId
+) {
+
+    if (!currentUser || !userId) {
+        return "none";
+    }
+
+    const friendship =
+        friends.find(
+            item =>
+                item.userId === userId
+        );
+
+    if (friendship) {
+        return "friends";
+    }
+
+    const incoming =
+        friendRequests.find(
+            item =>
+                item.requester_id === userId
+        );
+
+    if (incoming) {
+        return "incoming";
+    }
+
+    const outgoing =
+        sentRequests.find(
+            item =>
+                item.addressee_id === userId
+        );
+
+    if (outgoing) {
+        return "outgoing";
+    }
+
+    return "none";
+
+}
+
+
+/* =====================================================
+   LOAD SOCIAL DATA
+===================================================== */
+
+async function loadSocialData() {
+
+    if (
+        !currentUser ||
+        loadingFriends
+    ) {
+
+        return;
+
+    }
+
+    loadingFriends = true;
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("friendships")
+                .select(`
+                    id,
+                    requester_id,
+                    addressee_id,
+                    status,
+                    created_at
+                `)
+                .or(
+                    `requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        const rows =
+            data || [];
+
+        friends = [];
+
+        friendRequests = [];
+
+        sentRequests = [];
+
+        rows.forEach(row => {
+
+            if (
+                row.status === "accepted"
+            ) {
+
+                const otherUserId =
+                    row.requester_id === currentUser.id
+                        ? row.addressee_id
+                        : row.requester_id;
+
+                friends.push({
+
+                    id:
+                        row.id,
+
+                    userId:
+                        otherUserId,
+
+                    requesterId:
+                        row.requester_id,
+
+                    addresseeId:
+                        row.addressee_id
+
+                });
+
+                return;
+
+            }
+
+            if (
+                row.status === "pending"
+            ) {
+
+                if (
+                    row.addressee_id ===
+                    currentUser.id
+                ) {
+
+                    friendRequests.push(
+                        row
+                    );
+
+                } else if (
+                    row.requester_id ===
+                    currentUser.id
+                ) {
+
+                    sentRequests.push(
+                        row
+                    );
+
+                }
+
+            }
+
+        });
+
+        updateFriendCount();
+
+        updateRequestBadge();
+
+        await renderFriendsList();
+
+        await renderRequests();
+
+    } catch (error) {
+
+        console.error(
+            "Load social data error:",
+            error
+        );
+
+    } finally {
+
+        loadingFriends = false;
+
+    }
+
+}
+
+
+/* =====================================================
+   FRIEND COUNT
+===================================================== */
+
+function updateFriendCount() {
+
+    const element =
+        document.getElementById(
+            "friendCount"
+        );
+
+    if (element) {
+
+        element.textContent =
+            friends.length;
+
+    }
+
+}
+
+
+/* =====================================================
+   REQUEST BADGE
+===================================================== */
+
+function updateRequestBadge() {
+
+    const badge =
+        document.querySelector(
+            ".tab-badge"
+        );
+
+    if (badge) {
+
+        badge.textContent =
+            friendRequests.length;
+
+    }
+
+    const dot =
+        document.querySelector(
+            ".notification-dot"
+        );
+
+    if (dot) {
+
+        dot.style.display =
+            friendRequests.length
+                ? "block"
+                : "none";
+
+    }
+
+}
+
+
+/* =====================================================
+   SEARCH PEOPLE
+===================================================== */
+
+const friendSearch =
+    document.getElementById(
+        "friendSearch"
+    );
+
+if (friendSearch) {
+
+    friendSearch.addEventListener(
+        "input",
+        async () => {
+
+            await renderFriendsList(
+                friendSearch.value
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   RENDER FRIENDS LIST
+===================================================== */
+
+async function renderFriendsList(
+    searchValue = ""
+) {
+
+    const container =
+        document.getElementById(
+            "friendsList"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    const query =
+        String(
+            searchValue || ""
+        )
+            .trim()
+            .toLowerCase();
+
+    try {
+
+        let profiles = [];
+
+        if (query) {
+
+            const {
+                data,
+                error
+            } =
+                await supabaseClient
+                    .from("profiles")
+                    .select(
+                        "id, username, display_name, avatar_url"
+                    )
+                    .neq(
+                        "id",
+                        currentUser.id
+                    )
+                    .or(
+                        `username.ilike.%${query}%,display_name.ilike.%${query}%`
+                    )
+                    .limit(30);
+
+            if (error) {
+                throw error;
+            }
+
+            profiles =
+                data || [];
+
+        } else {
+
+            const friendIds =
+                friends.map(
+                    item =>
+                        item.userId
+                );
+
+            if (!friendIds.length) {
+
+                container.innerHTML =
+                    `
+                        <div class="empty-state">
+                            <strong>
+                                No friends yet
+                            </strong>
+
+                            <span>
+                                Search for people to add them.
+                            </span>
+                        </div>
+                    `;
+
+                return;
+
+            }
+
+            const {
+                data,
+                error
+            } =
+                await supabaseClient
+                    .from("profiles")
+                    .select(
+                        "id, username, display_name, avatar_url"
+                    )
+                    .in(
+                        "id",
+                        friendIds
+                    );
+
+            if (error) {
+                throw error;
+            }
+
+            profiles =
+                data || [];
+
+        }
+
+        if (!profiles.length) {
+
+            container.innerHTML =
+                `
+                    <div class="empty-state">
+                        <strong>
+                            No people found
+                        </strong>
+
+                        <span>
+                            Try another username or name.
+                        </span>
+                    </div>
+                `;
+
+            return;
+
+        }
+
+        container.innerHTML =
+            profiles
+                .map(
+                    profile =>
+                        renderPersonRow(
+                            profile
+                        )
+                )
+                .join("");
+
+        attachFriendButtons();
+
+    } catch (error) {
+
+        console.error(
+            "Render friends error:",
+            error
+        );
+
+        container.innerHTML =
+            `
+                <div class="empty-state">
+                    Unable to load people.
+                </div>
+            `;
+
+    }
+
+}
+
+
+/* =====================================================
+   PERSON ROW
+===================================================== */
+
+function renderPersonRow(
+    profile
+) {
+
+    const status =
+        friendshipStatusFor(
+            profile.id
+        );
+
+    const name =
+        escapeHTML(
+            profile.display_name ||
+            "User"
+        );
+
+    const username =
+        escapeHTML(
+            `@${profile.username || "user"}`
+        );
+
+    const avatar =
+        escapeHTML(
+            (
+                profile.display_name ||
+                profile.username ||
+                "U"
+            )
+                .charAt(0)
+                .toUpperCase()
+        );
+
+    let buttonHTML = "";
+
+    if (status === "friends") {
+
+        buttonHTML =
+            `
+                <button
+                    class="friend-action-button friends"
+                    data-user-id="${escapeHTML(profile.id)}"
+                    data-action="remove"
+                    type="button"
+                >
+                    Friends
+                </button>
+            `;
+
+    } else if (status === "outgoing") {
+
+        buttonHTML =
+            `
+                <button
+                    class="friend-action-button pending"
+                    data-user-id="${escapeHTML(profile.id)}"
+                    data-action="cancel"
+                    type="button"
+                >
+                    Pending
+                </button>
+            `;
+
+    } else if (status === "incoming") {
+
+        buttonHTML =
+            `
+                <button
+                    class="friend-action-button accept"
+                    data-user-id="${escapeHTML(profile.id)}"
+                    data-action="accept"
+                    type="button"
+                >
+                    Accept
+                </button>
+            `;
+
+    } else {
+
+        buttonHTML =
+            `
+                <button
+                    class="friend-action-button add"
+                    data-user-id="${escapeHTML(profile.id)}"
+                    data-action="add"
+                    type="button"
+                >
+                    Add
+                </button>
+            `;
+
+    }
+
+    return `
+        <article
+            class="person-row"
+            data-user-id="${escapeHTML(profile.id)}"
+        >
+
+            <div class="person-avatar">
+                ${avatar}
+            </div>
+
+            <div class="person-info">
+
+                <strong>
+                    ${name}
+                </strong>
+
+                <span>
+                    ${username}
+                </span>
+
+            </div>
+
+            ${buttonHTML}
+
+        </article>
+    `;
+
+}
+
+
+/* =====================================================
+   FRIEND BUTTON EVENTS
+===================================================== */
+
+function attachFriendButtons() {
+
+    document
+        .querySelectorAll(
+            ".friend-action-button"
+        )
+        .forEach(button => {
 
             button.addEventListener(
                 "click",
-                () => {
+                async event => {
 
-                    showScreen(
-                        button.dataset.back
+                    event.stopPropagation();
+
+                    const userId =
+                        button.dataset.userId;
+
+                    const action =
+                        button.dataset.action;
+
+                    await handleFriendAction(
+                        userId,
+                        action
                     );
 
                 }
             );
 
+        });
+
+}
+
+
+/* =====================================================
+   FRIEND ACTION
+===================================================== */
+
+async function handleFriendAction(
+    userId,
+    action
+) {
+
+    if (
+        !currentUser ||
+        !userId
+    ) {
+
+        return;
+
+    }
+
+    try {
+
+        if (action === "add") {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("friendships")
+                    .insert({
+
+                        requester_id:
+                            currentUser.id,
+
+                        addressee_id:
+                            userId,
+
+                        status:
+                            "pending"
+
+                    });
+
+            if (error) {
+                throw error;
+            }
+
+        }
+
+
+        if (action === "cancel") {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("friendships")
+                    .delete()
+                    .eq(
+                        "requester_id",
+                        currentUser.id
+                    )
+                    .eq(
+                        "addressee_id",
+                        userId
+                    )
+                    .eq(
+                        "status",
+                        "pending"
+                    );
+
+            if (error) {
+                throw error;
+            }
+
+        }
+
+
+        if (action === "accept") {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("friendships")
+                    .update({
+                        status:
+                            "accepted"
+                    })
+                    .eq(
+                        "requester_id",
+                        userId
+                    )
+                    .eq(
+                        "addressee_id",
+                        currentUser.id
+                    )
+                    .eq(
+                        "status",
+                        "pending"
+                    );
+
+            if (error) {
+                throw error;
+            }
+
+        }
+
+
+        if (action === "remove") {
+
+            const friendship =
+                friends.find(
+                    item =>
+                        item.userId === userId
+                );
+
+            if (!friendship) {
+                return;
+            }
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("friendships")
+                    .delete()
+                    .eq(
+                        "id",
+                        friendship.id
+                    );
+
+            if (error) {
+                throw error;
+            }
+
+        }
+
+        await loadSocialData();
+
+        await loadInstants();
+
+    } catch (error) {
+
+        console.error(
+            "Friend action error:",
+            error
+        );
+
+        alert(
+            error?.message ||
+            "Unable to update friendship."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   RENDER REQUESTS
+===================================================== */
+
+async function renderRequests() {
+
+    const container =
+        document.getElementById(
+            "requestsList"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    if (!friendRequests.length) {
+
+        container.innerHTML =
+            `
+                <div class="empty-state">
+
+                    <div>
+                        ✦
+                    </div>
+
+                    <strong>
+                        No friend requests
+                    </strong>
+
+                    <span>
+                        New requests will appear here.
+                    </span>
+
+                </div>
+            `;
+
+        return;
+
+    }
+
+    const requesterIds =
+        friendRequests.map(
+            request =>
+                request.requester_id
+        );
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("profiles")
+                .select(
+                    "id, username, display_name, avatar_url"
+                )
+                .in(
+                    "id",
+                    requesterIds
+                );
+
+        if (error) {
+            throw error;
+        }
+
+        const profileMap =
+            new Map(
+                (data || [])
+                    .map(
+                        profile => [
+                            profile.id,
+                            profile
+                        ]
+                    )
+            );
+
+        container.innerHTML =
+            friendRequests
+                .map(
+                    request => {
+
+                        const profile =
+                            profileMap.get(
+                                request.requester_id
+                            );
+
+                        if (!profile) {
+                            return "";
+                        }
+
+                        const name =
+                            escapeHTML(
+                                profile.display_name ||
+                                "User"
+                            );
+
+                        const username =
+                            escapeHTML(
+                                `@${profile.username || "user"}`
+                            );
+
+                        const avatar =
+                            escapeHTML(
+                                (
+                                    profile.display_name ||
+                                    profile.username ||
+                                    "U"
+                                )
+                                    .charAt(0)
+                                    .toUpperCase()
+                            );
+
+                        return `
+                            <article
+                                class="person-row request-row"
+                            >
+
+                                <div class="person-avatar">
+                                    ${avatar}
+                                </div>
+
+                                <div class="person-info">
+
+                                    <strong>
+                                        ${name}
+                                    </strong>
+
+                                    <span>
+                                        ${username}
+                                    </span>
+
+                                </div>
+
+                                <div class="request-actions">
+
+                                    <button
+                                        class="friend-action-button accept"
+                                        data-request-id="${escapeHTML(request.id)}"
+                                        data-requester-id="${escapeHTML(request.requester_id)}"
+                                        data-request-action="accept"
+                                        type="button"
+                                    >
+                                        Accept
+                                    </button>
+
+                                    <button
+                                        class="friend-action-button reject"
+                                        data-request-id="${escapeHTML(request.id)}"
+                                        data-requester-id="${escapeHTML(request.requester_id)}"
+                                        data-request-action="reject"
+                                        type="button"
+                                    >
+                                        Decline
+                                    </button>
+
+                                </div>
+
+                            </article>
+                        `;
+
+                    }
+                )
+                .join("");
+
+        container
+            .querySelectorAll(
+                "[data-request-action]"
+            )
+            .forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    async () => {
+
+                        await handleRequestAction(
+                            button.dataset.requestId,
+                            button.dataset.requesterId,
+                            button.dataset.requestAction
+                        );
+
+                    }
+                );
+
+            });
+
+    } catch (error) {
+
+        console.error(
+            "Render requests error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   REQUEST ACTION
+===================================================== */
+
+async function handleRequestAction(
+    requestId,
+    requesterId,
+    action
+) {
+
+    if (!currentUser) {
+        return;
+    }
+
+    try {
+
+        if (action === "accept") {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("friendships")
+                    .update({
+                        status:
+                            "accepted"
+                    })
+                    .eq(
+                        "id",
+                        requestId
+                    )
+                    .eq(
+                        "addressee_id",
+                        currentUser.id
+                    );
+
+            if (error) {
+                throw error;
+            }
+
+        } else {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("friendships")
+                    .delete()
+                    .eq(
+                        "id",
+                        requestId
+                    )
+                    .eq(
+                        "addressee_id",
+                        currentUser.id
+                    );
+
+            if (error) {
+                throw error;
+            }
+
+        }
+
+        await loadSocialData();
+
+        await loadInstants();
+
+    } catch (error) {
+
+        console.error(
+            "Request action error:",
+            error
+        );
+
+        alert(
+            error?.message ||
+            "Unable to update request."
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   REQUESTS BUTTON
+===================================================== */
+
+const requestsButton =
+    document.getElementById(
+        "requestsButton"
+    );
+
+if (requestsButton) {
+
+    requestsButton.addEventListener(
+        "click",
+        async () => {
+
+            await loadSocialData();
+
+            showScreen(
+                "requestsScreen"
+            );
+
         }
     );
+
+}
+
+
+/* =====================================================
+   FRIEND TABS
+===================================================== */
+
+document
+    .querySelectorAll(
+        ".friend-tab"
+    )
+    .forEach(tab => {
+
+        tab.addEventListener(
+            "click",
+            async () => {
+
+                document
+                    .querySelectorAll(
+                        ".friend-tab"
+                    )
+                    .forEach(item =>
+                        item.classList
+                            .remove(
+                                "active"
+                            )
+                    );
+
+                tab.classList.add(
+                    "active"
+                );
+
+                if (
+                    tab.dataset.tab ===
+                    "requests"
+                ) {
+
+                    await loadSocialData();
+
+                    showScreen(
+                        "requestsScreen"
+                    );
+
+                } else {
+
+                    showScreen(
+                        "friendsScreen"
+                    );
+
+                }
+
+            }
+        );
+
+    });
 
 
 /* =====================================================
@@ -1281,14 +2290,12 @@ const cameraErrorText =
    CAMERA STATE
 ===================================================== */
 
-let cameraStream =
-    null;
+let cameraStream = null;
 
 let cameraFacingMode =
     "user";
 
-let cameraOpening =
-    false;
+let cameraOpening = false;
 
 
 /* =====================================================
@@ -1302,15 +2309,13 @@ async function openCamera() {
         showAuth();
 
         return;
-
     }
 
     if (cameraOpening) {
         return;
     }
 
-    cameraOpening =
-        true;
+    cameraOpening = true;
 
     captureModal.classList.add(
         "show"
@@ -1334,14 +2339,11 @@ async function openCamera() {
             error
         );
 
-        showCameraError(
-            error
-        );
+        showCameraError(error);
 
     } finally {
 
-        cameraOpening =
-            false;
+        cameraOpening = false;
 
     }
 
@@ -1378,24 +2380,16 @@ async function startCamera() {
         video: {
 
             facingMode: {
-
                 ideal:
                     cameraFacingMode
-
             },
 
             width: {
-
-                ideal:
-                    1920
-
+                ideal: 1920
             },
 
             height: {
-
-                ideal:
-                    1080
-
+                ideal: 1080
             }
 
         }
@@ -1428,22 +2422,16 @@ function stopCamera() {
 
     cameraStream
         .getTracks()
-        .forEach(
-            track => {
+        .forEach(track => {
 
-                track.stop();
+            track.stop();
 
-            }
-        );
+        });
 
-    cameraStream =
-        null;
+    cameraStream = null;
 
     if (cameraVideo) {
-
-        cameraVideo.srcObject =
-            null;
-
+        cameraVideo.srcObject = null;
     }
 
 }
@@ -1487,10 +2475,6 @@ if (cancelCamera) {
 }
 
 
-/* =====================================================
-   CAMERA BUTTONS
-===================================================== */
-
 if (captureButton) {
 
     captureButton.addEventListener(
@@ -1529,8 +2513,7 @@ if (switchCamera) {
                 cameraFacingMode;
 
             cameraFacingMode =
-                cameraFacingMode ===
-                "user"
+                cameraFacingMode === "user"
                     ? "environment"
                     : "user";
 
@@ -1540,9 +2523,7 @@ if (switchCamera) {
 
             } catch (error) {
 
-                console.error(
-                    error
-                );
+                console.error(error);
 
                 cameraFacingMode =
                     previousMode;
@@ -1551,9 +2532,7 @@ if (switchCamera) {
 
                     await startCamera();
 
-                } catch (
-                    secondError
-                ) {
+                } catch (secondError) {
 
                     showCameraError(
                         secondError
@@ -1573,9 +2552,7 @@ if (switchCamera) {
    CAMERA ERROR
 ===================================================== */
 
-function showCameraError(
-    error
-) {
+function showCameraError(error) {
 
     cameraError.classList.add(
         "show"
@@ -1695,7 +2672,6 @@ function capturePhoto() {
     ) {
 
         return;
-
     }
 
     const width =
@@ -1711,13 +2687,10 @@ function capturePhoto() {
         height;
 
     const context =
-        cameraCanvas.getContext(
-            "2d"
-        );
+        cameraCanvas.getContext("2d");
 
     if (
-        cameraFacingMode ===
-        "user"
+        cameraFacingMode === "user"
     ) {
 
         context.save();
@@ -1795,8 +2768,7 @@ if (discardButton) {
 
 function discardPhoto() {
 
-    capturedImage.src =
-        "";
+    capturedImage.src = "";
 
     capturedImage.dataset.image =
         "";
@@ -1832,7 +2804,6 @@ async function postInstant() {
         showAuth();
 
         return;
-
     }
 
     const imageData =
@@ -1851,9 +2822,7 @@ async function postInstant() {
     try {
 
         const response =
-            await fetch(
-                imageData
-            );
+            await fetch(imageData);
 
         const blob =
             await response.blob();
@@ -1874,13 +2843,11 @@ async function postInstant() {
                     filePath,
                     blob,
                     {
-
                         contentType:
                             "image/jpeg",
 
                         upsert:
                             false
-
                     }
                 );
 
@@ -1891,14 +2858,10 @@ async function postInstant() {
         const expiresAt =
             new Date(
                 Date.now() +
-                24 *
-                60 *
-                60 *
-                1000
+                24 * 60 * 60 * 1000
             ).toISOString();
 
         const {
-            data: insertedInstant,
             error: insertError
         } =
             await supabaseClient
@@ -1920,9 +2883,7 @@ async function postInstant() {
                     is_active:
                         true
 
-                })
-                .select()
-                .single();
+                });
 
         if (insertError) {
 
@@ -1934,16 +2895,9 @@ async function postInstant() {
                 ]);
 
             throw insertError;
-
         }
 
-        console.log(
-            "Instant created:",
-            insertedInstant
-        );
-
-        capturedImage.src =
-            "";
+        capturedImage.src = "";
 
         capturedImage.dataset.image =
             "";
@@ -1963,8 +2917,7 @@ async function postInstant() {
 
         ]);
 
-        currentIndex =
-            0;
+        currentIndex = 0;
 
         updateMyInstantCount();
 
@@ -1998,7 +2951,7 @@ async function postInstant() {
 
 
 /* =====================================================
-   GET VIEWED INSTANT IDS
+   GET VIEWED IDS
 ===================================================== */
 
 async function getViewedInstantIds() {
@@ -2030,11 +2983,10 @@ async function getViewedInstantIds() {
         return (
             data || []
         )
-        .map(
-            row =>
-                row.instant_id
-        )
-        .filter(Boolean);
+            .map(
+                row =>
+                    row.instant_id
+            );
 
     } catch (error) {
 
@@ -2055,12 +3007,14 @@ async function getViewedInstantIds() {
 ===================================================== */
 
 async function markInstantViewed(
-    instantId
+    instantId,
+    ownerId
 ) {
 
     if (
         !currentUser ||
-        !instantId
+        !instantId ||
+        !ownerId
     ) {
 
         return false;
@@ -2080,15 +3034,19 @@ async function markInstantViewed(
                         instant_id:
                             instantId,
 
+                        user_id:
+                            ownerId,
+
                         viewer_id:
-                            currentUser.id
+                            currentUser.id,
+
+                        viewed_at:
+                            new Date().toISOString()
 
                     },
                     {
-
                         onConflict:
                             "instant_id,viewer_id"
-
                     }
                 );
 
@@ -2113,380 +3071,50 @@ async function markInstantViewed(
 
 
 /* =====================================================
-   GET VIEW COUNTS
+   LOAD INSTANTS
 ===================================================== */
 
-async function getViewCounts(
-    instantIds
-) {
-
-    const counts =
-        new Map();
-
-    if (!instantIds.length) {
-        return counts;
-    }
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from("instant_views")
-                .select(
-                    "instant_id"
-                )
-                .in(
-                    "instant_id",
-                    instantIds
-                );
-
-        if (error) {
-            throw error;
-        }
-
-        (
-            data || []
-        ).forEach(
-            row => {
-
-                const id =
-                    row.instant_id;
-
-                counts.set(
-                    id,
-                    (
-                        counts.get(id) ||
-                        0
-                    ) + 1
-                );
-
-            }
-        );
-
-    } catch (error) {
-
-        console.error(
-            "View count error:",
-            error
-        );
-
-    }
-
-    return counts;
-
-}
-
-
-/* =====================================================
-   GET LIKE DATA
-===================================================== */
-
-async function getLikeData(
-    instantIds
-) {
-
-    const result = {
-
-        counts:
-            new Map(),
-
-        liked:
-            new Set()
-
-    };
-
-    if (!instantIds.length) {
-        return result;
-    }
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from("instant_likes")
-                .select(
-                    "instant_id,user_id"
-                )
-                .in(
-                    "instant_id",
-                    instantIds
-                );
-
-        if (error) {
-            throw error;
-        }
-
-        (
-            data || []
-        ).forEach(
-            row => {
-
-                result.counts.set(
-                    row.instant_id,
-                    (
-                        result.counts.get(
-                            row.instant_id
-                        ) ||
-                        0
-                    ) + 1
-                );
-
-                if (
-                    currentUser &&
-                    row.user_id ===
-                    currentUser.id
-                ) {
-
-                    result.liked.add(
-                        row.instant_id
-                    );
-
-                }
-
-            }
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Like data error:",
-            error
-        );
-
-    }
-
-    return result;
-
-}
-
-
-/* =====================================================
-   TOGGLE INSTANT LIKE
-===================================================== */
-
-async function toggleInstantLike(
-    instantId
-) {
+async function loadInstants() {
 
     if (
-        !currentUser ||
-        !instantId
+        loadingInstants ||
+        !currentUser
     ) {
 
         return;
 
     }
 
-    const instant =
-        instants.find(
-            item =>
-                item.id ===
-                instantId
-        );
-
-    if (!instant) {
-        return;
-    }
-
-    const previousLiked =
-        !!instant.liked;
-
-    const previousCount =
-        Number(
-            instant.likes || 0
-        );
-
-    const nextLiked =
-        !previousLiked;
-
-    instant.liked =
-        nextLiked;
-
-    instant.likes =
-        Math.max(
-            0,
-            previousCount +
-            (
-                nextLiked
-                    ? 1
-                    : -1
-            )
-        );
-
-    renderCurrentLikeState(
-        instant
-    );
-
-    try {
-
-        if (nextLiked) {
-
-            const {
-                error
-            } =
-                await supabaseClient
-                    .from("instant_likes")
-                    .insert({
-
-                        instant_id:
-                            instantId,
-
-                        user_id:
-                            currentUser.id
-
-                    });
-
-            if (error) {
-                throw error;
-            }
-
-        } else {
-
-            const {
-                error
-            } =
-                await supabaseClient
-                    .from("instant_likes")
-                    .delete()
-                    .eq(
-                        "instant_id",
-                        instantId
-                    )
-                    .eq(
-                        "user_id",
-                        currentUser.id
-                    );
-
-            if (error) {
-                throw error;
-            }
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Toggle like error:",
-            error
-        );
-
-        instant.liked =
-            previousLiked;
-
-        instant.likes =
-            previousCount;
-
-        renderCurrentLikeState(
-            instant
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   UPDATE LIKE UI
-===================================================== */
-
-function renderCurrentLikeState(
-    instant
-) {
-
-    const card =
-        document.querySelector(
-            `.instant-card[data-instant-id="${instant.id}"]`
-        );
-
-    if (!card) {
-        return;
-    }
-
-    const button =
-        card.querySelector(
-            ".like-button"
-        );
-
-    if (!button) {
-        return;
-    }
-
-    const icon =
-        button.querySelector(
-            "span"
-        );
-
-    const count =
-        button.querySelector(
-            "strong"
-        );
-
-    button.classList.toggle(
-        "liked",
-        !!instant.liked
-    );
-
-    if (icon) {
-
-        icon.textContent =
-            instant.liked
-                ? "♥"
-                : "♡";
-
-    }
-
-    if (count) {
-
-        count.textContent =
-            instant.likes;
-
-    }
-
-}
-
-
-/* =====================================================
-   FEED — LOAD INSTANTS
-===================================================== */
-
-async function loadInstants() {
-
-    if (loadingInstants) {
-        return;
-    }
-
-    loadingInstants =
-        true;
-
-    if (!currentUser) {
-
-        instants =
-            [];
-
-        currentIndex =
-            0;
-
-        renderInstantCards();
-
-        updateHomeInstantCount();
-
-        loadingInstants =
-            false;
-
-        return;
-
-    }
+    loadingInstants = true;
 
     try {
 
         const viewedIds =
             await getViewedInstantIds();
+
+        const friendIds =
+            friends.map(
+                friend =>
+                    friend.userId
+            );
+
+        /*
+         * Only friends can appear in feed.
+         */
+
+        if (!friendIds.length) {
+
+            instants = [];
+
+            currentIndex = 0;
+
+            renderInstantCards();
+
+            updateHomeInstantCount();
+
+            return;
+
+        }
 
         let query =
             supabaseClient
@@ -2508,15 +3136,14 @@ async function loadInstants() {
                     "expires_at",
                     new Date().toISOString()
                 )
-                .neq(
+                .in(
                     "user_id",
-                    currentUser.id
+                    friendIds
                 )
                 .order(
                     "created_at",
                     {
-                        ascending:
-                            false
+                        ascending: false
                     }
                 );
 
@@ -2544,22 +3171,6 @@ async function loadInstants() {
         const rows =
             data || [];
 
-        const instantIds =
-            rows.map(
-                row =>
-                    row.id
-            );
-
-        const viewCounts =
-            await getViewCounts(
-                instantIds
-            );
-
-        const likeData =
-            await getLikeData(
-                instantIds
-            );
-
         const userIds =
             [
                 ...new Set(
@@ -2570,8 +3181,7 @@ async function loadInstants() {
                 )
             ];
 
-        let profiles =
-            [];
+        let profiles = [];
 
         if (userIds.length) {
 
@@ -2582,7 +3192,7 @@ async function loadInstants() {
                 await supabaseClient
                     .from("profiles")
                     .select(
-                        "id,username,display_name,avatar_url"
+                        "id, username, display_name, avatar_url"
                     )
                     .in(
                         "id",
@@ -2602,16 +3212,13 @@ async function loadInstants() {
             new Map(
                 profiles.map(
                     profile => [
-
                         profile.id,
                         profile
-
                     ]
                 )
             );
 
-        const processed =
-            [];
+        const processed = [];
 
         for (
             const instant of rows
@@ -2622,38 +3229,27 @@ async function loadInstants() {
                     instant.user_id
                 );
 
-            const usableProfile =
-                profile || {
-
-                    username:
-                        "user",
-
-                    display_name:
-                        "User",
-
-                    avatar_url:
-                        ""
-
-                };
-
             const signedUrl =
                 await getInstantImage(
                     instant.image_url
                 );
 
             if (!signedUrl) {
-
                 continue;
-
             }
 
             const displayName =
-                usableProfile.display_name ||
+                profile?.display_name ||
                 "User";
 
             const username =
-                usableProfile.username ||
+                profile?.username ||
                 "user";
+
+            const stats =
+                await getInstantStats(
+                    instant.id
+                );
 
             processed.push({
 
@@ -2674,61 +3270,40 @@ async function loadInstants() {
                         .charAt(0)
                         .toUpperCase(),
 
-                avatarUrl:
-                    usableProfile.avatar_url ||
-                    "",
-
                 time:
                     formatInstantTime(
                         instant.created_at
                     ),
 
                 caption:
-                    instant.caption ||
-                    "",
+                    instant.caption || "",
 
                 image:
                     signedUrl,
 
                 likes:
-                    likeData.counts.get(
-                        instant.id
-                    ) || 0,
-
-                liked:
-                    likeData.liked.has(
-                        instant.id
-                    ),
+                    stats.likes,
 
                 seen:
-                    viewCounts.get(
-                        instant.id
-                    ) || 0,
+                    stats.seen,
+
+                liked:
+                    stats.liked,
 
                 mine:
                     false,
 
                 createdAt:
-                    instant.created_at,
-
-                _viewed:
-                    false
+                    instant.created_at
 
             });
 
         }
 
         processed.sort(
-            (
-                a,
-                b
-            ) =>
-                new Date(
-                    b.createdAt
-                ) -
-                new Date(
-                    a.createdAt
-                )
+            (a, b) =>
+                new Date(b.createdAt) -
+                new Date(a.createdAt)
         );
 
         instants =
@@ -2738,8 +3313,7 @@ async function loadInstants() {
             Math.min(
                 currentIndex,
                 Math.max(
-                    instants.length -
-                    1,
+                    instants.length - 1,
                     0
                 )
             );
@@ -2755,11 +3329,9 @@ async function loadInstants() {
             error
         );
 
-        instants =
-            [];
+        instants = [];
 
-        currentIndex =
-            0;
+        currentIndex = 0;
 
         renderInstantCards();
 
@@ -2767,8 +3339,7 @@ async function loadInstants() {
 
     } finally {
 
-        loadingInstants =
-            false;
+        loadingInstants = false;
 
     }
 
@@ -2776,7 +3347,7 @@ async function loadInstants() {
 
 
 /* =====================================================
-   MY INSTANTS
+   LOAD MY INSTANTS
 ===================================================== */
 
 async function loadMyInstants() {
@@ -2790,28 +3361,16 @@ async function loadMyInstants() {
         return;
     }
 
-    if (loadingMyInstants) {
-        return;
-    }
-
-    loadingMyInstants =
-        true;
-
-    if (!currentUser) {
-
-        myInstants =
-            [];
-
-        renderMyInstants();
-
-        updateMyInstantCount();
-
-        loadingMyInstants =
-            false;
+    if (
+        loadingMyInstants ||
+        !currentUser
+    ) {
 
         return;
 
     }
+
+    loadingMyInstants = true;
 
     try {
 
@@ -2845,8 +3404,7 @@ async function loadMyInstants() {
                 .order(
                     "created_at",
                     {
-                        ascending:
-                            false
+                        ascending: false
                     }
                 );
 
@@ -2857,24 +3415,7 @@ async function loadMyInstants() {
         const rows =
             data || [];
 
-        const instantIds =
-            rows.map(
-                row =>
-                    row.id
-            );
-
-        const viewCounts =
-            await getViewCounts(
-                instantIds
-            );
-
-        const likeData =
-            await getLikeData(
-                instantIds
-            );
-
-        const processed =
-            [];
+        const processed = [];
 
         for (
             const instant of rows
@@ -2888,6 +3429,11 @@ async function loadMyInstants() {
             if (!signedUrl) {
                 continue;
             }
+
+            const stats =
+                await getInstantStats(
+                    instant.id
+                );
 
             processed.push({
 
@@ -2909,26 +3455,21 @@ async function loadMyInstants() {
                     signedUrl,
 
                 caption:
-                    instant.caption ||
-                    "",
+                    instant.caption || "",
 
                 time:
                     formatInstantTime(
                         instant.created_at
                     ),
 
-                createdAt:
-                    instant.created_at,
-
                 likes:
-                    likeData.counts.get(
-                        instant.id
-                    ) || 0,
+                    stats.likes,
 
                 seen:
-                    viewCounts.get(
-                        instant.id
-                    ) || 0
+                    stats.seen,
+
+                createdAt:
+                    instant.created_at
 
             });
 
@@ -2948,8 +3489,7 @@ async function loadMyInstants() {
             error
         );
 
-        myInstants =
-            [];
+        myInstants = [];
 
         renderMyInstants();
 
@@ -2957,10 +3497,109 @@ async function loadMyInstants() {
 
     } finally {
 
-        loadingMyInstants =
-            false;
+        loadingMyInstants = false;
 
     }
+
+}
+
+
+/* =====================================================
+   GET INSTANT STATS
+===================================================== */
+
+async function getInstantStats(
+    instantId
+) {
+
+    if (!instantId) {
+
+        return {
+            likes: 0,
+            seen: 0,
+            liked: false
+        };
+
+    }
+
+    let likes = 0;
+    let seen = 0;
+    let liked = false;
+
+    try {
+
+        const {
+            data: likesData,
+            error: likesError
+        } =
+            await supabaseClient
+                .from("instant_likes")
+                .select(
+                    "id, user_id"
+                )
+                .eq(
+                    "instant_id",
+                    instantId
+                );
+
+        if (likesError) {
+            throw likesError;
+        }
+
+        const likeRows =
+            likesData || [];
+
+        likes =
+            likeRows.length;
+
+        liked =
+            likeRows.some(
+                row =>
+                    row.user_id ===
+                    currentUser?.id
+            );
+
+        const {
+            count,
+            error: viewsError
+        } =
+            await supabaseClient
+                .from("instant_views")
+                .select(
+                    "id",
+                    {
+                        count:
+                            "exact",
+                        head:
+                            true
+                    }
+                )
+                .eq(
+                    "instant_id",
+                    instantId
+                );
+
+        if (viewsError) {
+            throw viewsError;
+        }
+
+        seen =
+            count || 0;
+
+    } catch (error) {
+
+        console.error(
+            "Instant stats error:",
+            error
+        );
+
+    }
+
+    return {
+        likes,
+        seen,
+        liked
+    };
 
 }
 
@@ -3002,10 +3641,8 @@ async function getInstantImage(
 
         }
 
-        return (
-            data?.signedUrl ||
-            null
-        );
+        return data?.signedUrl ||
+            null;
 
     } catch (error) {
 
@@ -3072,6 +3709,7 @@ function renderMyInstants() {
                         <article
                             class="my-instant-item"
                             data-instant-id="${escapeHTML(instant.id)}"
+                            data-my-instant="true"
                         >
 
                             <div
@@ -3086,6 +3724,14 @@ function renderMyInstants() {
 
                                     <span>
                                         ${escapeHTML(instant.time)}
+                                    </span>
+
+                                </div>
+
+                                <div class="my-instant-stats">
+
+                                    <span>
+                                        ♥ ${instant.likes}
                                     </span>
 
                                     <span>
@@ -3103,6 +3749,26 @@ function renderMyInstants() {
                 }
             )
             .join("");
+
+    container
+        .querySelectorAll(
+            "[data-my-instant]"
+        )
+        .forEach(item => {
+
+            item.addEventListener(
+                "click",
+                () => {
+
+                    openInstantDetails(
+                        item.dataset.instantId,
+                        true
+                    );
+
+                }
+            );
+
+        });
 
 }
 
@@ -3141,17 +3807,14 @@ function formatInstantTime(
     }
 
     const date =
-        new Date(
-            dateString
-        );
+        new Date(dateString);
 
     const seconds =
         Math.floor(
             (
                 Date.now() -
                 date.getTime()
-            ) /
-            1000
+            ) / 1000
         );
 
     if (seconds < 60) {
@@ -3256,8 +3919,7 @@ function renderInstantCards() {
         return;
     }
 
-    cardArea.innerHTML =
-        "";
+    cardArea.innerHTML = "";
 
     if (!instants.length) {
 
@@ -3363,6 +4025,16 @@ function renderInstantCards() {
                     instant.avatar
                 );
 
+            const likeIcon =
+                instant.liked
+                    ? "♥"
+                    : "♡";
+
+            const likedClass =
+                instant.liked
+                    ? "liked"
+                    : "";
+
             card.innerHTML = `
 
                 <div
@@ -3426,22 +4098,13 @@ function renderInstantCards() {
                         >
 
                             <button
-                                class="like-button ${
-                                    instant.liked
-                                        ? "liked"
-                                        : ""
-                                }"
+                                class="like-button ${likedClass}"
                                 data-index="${actualIndex}"
-                                data-instant-id="${escapeHTML(instant.id)}"
                                 type="button"
                             >
 
                                 <span>
-                                    ${
-                                        instant.liked
-                                            ? "♥"
-                                            : "♡"
-                                    }
+                                    ${likeIcon}
                                 </span>
 
                                 <strong>
@@ -3450,13 +4113,15 @@ function renderInstantCards() {
 
                             </button>
 
-                            <span
+                            <button
                                 class="seen-text"
+                                data-instant-details="${escapeHTML(instant.id)}"
+                                type="button"
                             >
                                 👀
                                 ${instant.seen}
                                 seen
-                            </span>
+                            </button>
 
                         </div>
 
@@ -3509,32 +4174,14 @@ async function markCurrentCardViewed() {
 
     const success =
         await markInstantViewed(
-            instant.id
+            instant.id,
+            instant.userId
         );
 
     if (!success) {
 
         instant._viewed =
             false;
-
-        return;
-
-    }
-
-    instant.seen =
-        Number(
-            instant.seen || 0
-        ) + 1;
-
-    const seenElement =
-        document.querySelector(
-            `.instant-card[data-instant-id="${instant.id}"] .seen-text`
-        );
-
-    if (seenElement) {
-
-        seenElement.textContent =
-            `👀 ${instant.seen} seen`;
 
     }
 
@@ -3552,289 +4199,451 @@ function setupCardInteractions() {
             ".instant-card"
         );
 
-    cards.forEach(
-        card => {
+    cards.forEach(card => {
 
-            const cardIndex =
-                Number(
-                    card.dataset.index
-                );
+        const cardIndex =
+            Number(
+                card.dataset.index
+            );
 
-            const isTopCard =
-                cardIndex ===
-                currentIndex;
+        const isTopCard =
+            cardIndex ===
+            currentIndex;
 
-            if (!isTopCard) {
+        if (!isTopCard) {
 
-                card.style.pointerEvents =
-                    "none";
+            card.style.pointerEvents =
+                "none";
 
-                return;
+            return;
+
+        }
+
+        card.style.touchAction =
+            "pan-y";
+
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+
+        let dragging = false;
+        let horizontalSwipe = false;
+
+        card.addEventListener(
+            "pointerdown",
+            event => {
+
+                if (
+                    event.target.closest(
+                        "button"
+                    )
+                ) {
+
+                    return;
+
+                }
+
+                startX =
+                    event.clientX;
+
+                startY =
+                    event.clientY;
+
+                currentX =
+                    0;
+
+                dragging =
+                    true;
+
+                horizontalSwipe =
+                    false;
 
             }
+        );
 
-            card.style.touchAction =
-                "pan-y";
+        card.addEventListener(
+            "pointermove",
+            event => {
 
-            let startX =
-                0;
+                if (!dragging) {
+                    return;
+                }
 
-            let startY =
-                0;
+                const deltaX =
+                    event.clientX -
+                    startX;
 
-            let currentX =
-                0;
+                const deltaY =
+                    event.clientY -
+                    startY;
 
-            let dragging =
-                false;
-
-            let horizontalSwipe =
-                false;
-
-            card.addEventListener(
-                "pointerdown",
-                event => {
-
-                    if (
-                        event.target.closest(
-                            "button"
-                        )
-                    ) {
-
-                        return;
-
-                    }
-
-                    startX =
-                        event.clientX;
-
-                    startY =
-                        event.clientY;
-
-                    currentX =
-                        0;
+                if (
+                    !horizontalSwipe &&
+                    Math.abs(deltaY) >
+                    Math.abs(deltaX) &&
+                    Math.abs(deltaY) > 8
+                ) {
 
                     dragging =
-                        true;
+                        false;
+
+                    return;
+
+                }
+
+                if (
+                    !horizontalSwipe &&
+                    Math.abs(deltaX) > 10 &&
+                    Math.abs(deltaX) >
+                    Math.abs(deltaY)
+                ) {
 
                     horizontalSwipe =
-                        false;
-
-                }
-            );
-
-            card.addEventListener(
-                "pointermove",
-                event => {
-
-                    if (!dragging) {
-                        return;
-                    }
-
-                    const deltaX =
-                        event.clientX -
-                        startX;
-
-                    const deltaY =
-                        event.clientY -
-                        startY;
-
-                    if (
-                        !horizontalSwipe &&
-                        Math.abs(deltaY) >
-                        Math.abs(deltaX) &&
-                        Math.abs(deltaY) >
-                        8
-                    ) {
-
-                        dragging =
-                            false;
-
-                        return;
-
-                    }
-
-                    if (
-                        !horizontalSwipe &&
-                        Math.abs(deltaX) >
-                        10 &&
-                        Math.abs(deltaX) >
-                        Math.abs(deltaY)
-                    ) {
-
-                        horizontalSwipe =
-                            true;
-
-                        try {
-
-                            card.setPointerCapture(
-                                event.pointerId
-                            );
-
-                        } catch (
-                            error
-                        ) {}
-
-                    }
-
-                    if (
-                        !horizontalSwipe
-                    ) {
-
-                        return;
-
-                    }
-
-                    currentX =
-                        Math.max(
-                            0,
-                            deltaX
-                        );
-
-                    const rotation =
-                        Math.min(
-                            currentX /
-                            12,
-                            12
-                        );
-
-                    card.style.transition =
-                        "none";
-
-                    card.style.transform =
-                        `
-                        translateX(${currentX}px)
-                        rotate(${rotation}deg)
-                        `;
-
-                }
-            );
-
-            card.addEventListener(
-                "pointerup",
-                event => {
-
-                    if (!dragging) {
-                        return;
-                    }
-
-                    dragging =
-                        false;
-
-                    if (
-                        !horizontalSwipe
-                    ) {
-
-                        currentX =
-                            0;
-
-                        return;
-
-                    }
+                        true;
 
                     try {
 
-                        card.releasePointerCapture(
+                        card.setPointerCapture(
                             event.pointerId
                         );
 
-                    } catch (
-                        error
-                    ) {}
+                    } catch (error) {}
 
-                    card.style.transition =
-                        "";
+                }
 
-                    if (
-                        currentX >
-                        120
-                    ) {
+                if (!horizontalSwipe) {
+                    return;
+                }
 
-                        swipeCard(
-                            card
-                        );
+                currentX =
+                    Math.max(
+                        0,
+                        deltaX
+                    );
 
-                    } else {
+                const rotation =
+                    Math.min(
+                        currentX / 12,
+                        12
+                    );
 
-                        card.classList.add(
-                            "return-card"
-                        );
+                card.style.transition =
+                    "none";
 
-                        setTimeout(
-                            () => {
+                card.style.transform =
+                    `
+                    translateX(${currentX}px)
+                    rotate(${rotation}deg)
+                    `;
 
-                                card.classList.remove(
-                                    "return-card"
-                                );
+            }
+        );
 
-                                card.style.transform =
-                                    "";
+        card.addEventListener(
+            "pointerup",
+            event => {
 
-                            },
-                            350
-                        );
+                if (!dragging) {
+                    return;
+                }
 
-                    }
+                dragging =
+                    false;
+
+                if (!horizontalSwipe) {
 
                     currentX =
                         0;
 
-                }
-            );
-
-            card.addEventListener(
-                "pointercancel",
-                () => {
-
-                    dragging =
-                        false;
-
-                    horizontalSwipe =
-                        false;
-
-                    currentX =
-                        0;
-
-                    card.style.transform =
-                        "";
+                    return;
 
                 }
-            );
 
-        }
-    );
+                try {
+
+                    card.releasePointerCapture(
+                        event.pointerId
+                    );
+
+                } catch (error) {}
+
+                card.style.transition =
+                    "";
+
+                if (
+                    currentX >
+                    120
+                ) {
+
+                    swipeCard(card);
+
+                } else {
+
+                    card.classList.add(
+                        "return-card"
+                    );
+
+                    setTimeout(
+                        () => {
+
+                            card.classList.remove(
+                                "return-card"
+                            );
+
+                            card.style.transform =
+                                "";
+
+                        },
+                        350
+                    );
+
+                }
+
+                currentX =
+                    0;
+
+            }
+        );
+
+        card.addEventListener(
+            "pointercancel",
+            () => {
+
+                dragging =
+                    false;
+
+                horizontalSwipe =
+                    false;
+
+                currentX =
+                    0;
+
+                card.style.transform =
+                    "";
+
+            }
+        );
+
+    });
 
 
     document
         .querySelectorAll(
             ".like-button"
         )
-        .forEach(
-            button => {
+        .forEach(button => {
 
-                button.addEventListener(
-                    "click",
-                    async event => {
+            button.addEventListener(
+                "click",
+                async event => {
 
-                        event.stopPropagation();
+                    event.stopPropagation();
 
-                        const instantId =
-                            button.dataset
-                                .instantId;
-
-                        if (!instantId) {
-                            return;
-                        }
-
-                        await toggleInstantLike(
-                            instantId
+                    const index =
+                        Number(
+                            button.dataset.index
                         );
 
+                    if (
+                        !instants[index]
+                    ) {
+
+                        return;
+
                     }
+
+                    await toggleInstantLike(
+                        instants[index],
+                        button
+                    );
+
+                }
+            );
+
+        });
+
+
+    document
+        .querySelectorAll(
+            "[data-instant-details]"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+                    openInstantDetails(
+                        button.dataset.instantDetails,
+                        false
+                    );
+
+                }
+            );
+
+        });
+
+}
+
+
+/* =====================================================
+   TOGGLE LIKE
+===================================================== */
+
+async function toggleInstantLike(
+    instant,
+    button
+) {
+
+    if (
+        !currentUser ||
+        !instant
+    ) {
+
+        return;
+
+    }
+
+    button.disabled =
+        true;
+
+    try {
+
+        if (instant.liked) {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("instant_likes")
+                    .delete()
+                    .eq(
+                        "instant_id",
+                        instant.id
+                    )
+                    .eq(
+                        "user_id",
+                        currentUser.id
+                    );
+
+            if (error) {
+                throw error;
+            }
+
+            instant.liked =
+                false;
+
+            instant.likes =
+                Math.max(
+                    0,
+                    instant.likes - 1
                 );
 
+        } else {
+
+            const {
+                error
+            } =
+                await supabaseClient
+                    .from("instant_likes")
+                    .insert({
+
+                        instant_id:
+                            instant.id,
+
+                        user_id:
+                            currentUser.id
+
+                    });
+
+            if (error) {
+
+                if (
+                    error.code ===
+                    "23505"
+                ) {
+
+                    instant.liked =
+                        true;
+
+                } else {
+
+                    throw error;
+
+                }
+
+            } else {
+
+                instant.liked =
+                    true;
+
+                instant.likes++;
+
             }
+
+        }
+
+        const icon =
+            button.querySelector(
+                "span"
+            );
+
+        const count =
+            button.querySelector(
+                "strong"
+            );
+
+        if (instant.liked) {
+
+            button.classList.add(
+                "liked"
+            );
+
+            if (icon) {
+                icon.textContent =
+                    "♥";
+            }
+
+        } else {
+
+            button.classList.remove(
+                "liked"
+            );
+
+            if (icon) {
+                icon.textContent =
+                    "♡";
+            }
+
+        }
+
+        if (count) {
+
+            count.textContent =
+                instant.likes;
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Like error:",
+            error
         );
+
+        alert(
+            error?.message ||
+            "Unable to update like."
+        );
+
+    } finally {
+
+        button.disabled =
+            false;
+
+    }
 
 }
 
@@ -3843,9 +4652,7 @@ function setupCardInteractions() {
    SWIPE CARD
 ===================================================== */
 
-async function swipeCard(
-    card
-) {
+async function swipeCard(card) {
 
     card.style.transition =
         "transform .35s ease, opacity .35s ease";
@@ -4056,1410 +4863,445 @@ function updateHomeInstantCount() {
 
 
 /* =====================================================
-   FRIENDSHIP HELPERS
+   INSTANT DETAILS
+   DYNAMIC MODAL
 ===================================================== */
 
-function normalizeFriendStatus(
-    status
-) {
+function createDetailsModal() {
 
-    return String(
-        status || ""
-    )
-        .trim()
-        .toLowerCase();
+    let modal =
+        document.getElementById(
+            "instantDetailsModal"
+        );
 
-}
-
-
-function getFriendshipState(
-    userId
-) {
-
-    if (
-        !currentUser ||
-        !userId
-    ) {
-
-        return "none";
-
+    if (modal) {
+        return modal;
     }
 
-    if (
-        friends.some(
-            friendship =>
-                friendship.userId ===
-                userId
+    modal =
+        document.createElement(
+            "div"
+        );
+
+    modal.id =
+        "instantDetailsModal";
+
+    modal.className =
+        "modal";
+
+    modal.innerHTML = `
+
+        <div
+            class="instant-details-modal"
+            style="
+                background:#111;
+                width:min(92vw,520px);
+                max-height:85vh;
+                overflow:auto;
+                border-radius:24px;
+                padding:24px;
+                color:white;
+            "
+        >
+
+            <button
+                type="button"
+                id="closeInstantDetails"
+                style="
+                    float:right;
+                    background:none;
+                    border:0;
+                    color:white;
+                    font-size:28px;
+                    cursor:pointer;
+                "
+            >
+                ×
+            </button>
+
+            <h2
+                id="instantDetailsTitle"
+                style="margin-top:10px;"
+            >
+                Instant
+            </h2>
+
+            <div
+                id="instantDetailsStats"
+                style="
+                    display:flex;
+                    gap:20px;
+                    margin:18px 0;
+                "
+            ></div>
+
+            <div
+                id="instantDetailsBody"
+            ></div>
+
+        </div>
+
+    `;
+
+    document.body.appendChild(
+        modal
+    );
+
+    modal
+        .querySelector(
+            "#closeInstantDetails"
         )
-    ) {
+        .addEventListener(
+            "click",
+            () => {
 
-        return "friends";
+                modal.classList.remove(
+                    "show"
+                );
 
-    }
+            }
+        );
 
-    if (
-        friendRequests.some(
-            request =>
-                request.userId ===
-                userId
-        )
-    ) {
-
-        return "incoming";
-
-    }
-
-    if (
-        sentFriendRequests.some(
-            request =>
-                request.userId ===
-                userId
-        )
-    ) {
-
-        return "outgoing";
-
-    }
-
-    return "none";
+    return modal;
 
 }
 
 
 /* =====================================================
-   LOAD FRIEND DATA
+   OPEN DETAILS
 ===================================================== */
 
-async function loadFriendData() {
+async function openInstantDetails(
+    instantId,
+    mine = false
+) {
 
     if (
         !currentUser ||
-        loadingFriends
+        !instantId
     ) {
 
         return;
 
     }
 
-    loadingFriends =
-        true;
+    const modal =
+        createDetailsModal();
+
+    const title =
+        modal.querySelector(
+            "#instantDetailsTitle"
+        );
+
+    const stats =
+        modal.querySelector(
+            "#instantDetailsStats"
+        );
+
+    const body =
+        modal.querySelector(
+            "#instantDetailsBody"
+        );
+
+    title.textContent =
+        "Instant";
+
+    stats.innerHTML =
+        "Loading...";
+
+    body.innerHTML =
+        "";
+
+    modal.classList.add(
+        "show"
+    );
 
     try {
 
         const {
-            data,
-            error
+            data: instant,
+            error: instantError
         } =
             await supabaseClient
-                .from("friendships")
+                .from("instants")
                 .select(`
                     id,
-                    requester_id,
-                    addressee_id,
-                    status,
+                    user_id,
+                    image_url,
+                    caption,
                     created_at
                 `)
-                .or(
-                    `requester_id.eq.${currentUser.id},addressee_id.eq.${currentUser.id}`
-                );
+                .eq(
+                    "id",
+                    instantId
+                )
+                .maybeSingle();
 
-        if (error) {
-            throw error;
+        if (instantError) {
+            throw instantError;
         }
 
-        const rows =
-            data || [];
+        if (!instant) {
 
-        friends =
-            [];
+            body.textContent =
+                "Instant not found.";
 
-        friendRequests =
-            [];
+            return;
 
-        sentFriendRequests =
-            [];
+        }
 
-        const otherUserIds =
-            [];
+        const {
+            data: likesData,
+            error: likesError
+        } =
+            await supabaseClient
+                .from("instant_likes")
+                .select(
+                    "id, user_id"
+                )
+                .eq(
+                    "instant_id",
+                    instantId
+                );
 
-        rows.forEach(
-            friendship => {
+        if (likesError) {
+            throw likesError;
+        }
 
-                const status =
-                    normalizeFriendStatus(
-                        friendship.status
-                    );
-
-                const isRequester =
-                    friendship.requester_id ===
-                    currentUser.id;
-
-                const otherUserId =
-                    isRequester
-                        ? friendship.addressee_id
-                        : friendship.requester_id;
-
-                if (
-                    otherUserId &&
-                    !otherUserIds.includes(
-                        otherUserId
-                    )
-                ) {
-
-                    otherUserIds.push(
-                        otherUserId
-                    );
-
-                }
-
-                if (
-                    status ===
-                    "accepted"
-                ) {
-
-                    friends.push({
-
-                        friendshipId:
-                            friendship.id,
-
-                        userId:
-                            otherUserId,
-
-                        requesterId:
-                            friendship.requester_id,
-
-                        addresseeId:
-                            friendship.addressee_id,
-
-                        status
-
-                    });
-
-                } else if (
-                    status ===
-                    "pending"
-                ) {
-
-                    if (
-                        isRequester
-                    ) {
-
-                        sentFriendRequests.push({
-
-                            friendshipId:
-                                friendship.id,
-
-                            userId:
-                                otherUserId,
-
-                            requesterId:
-                                friendship.requester_id,
-
-                            addresseeId:
-                                friendship.addressee_id,
-
-                            status
-
-                        });
-
-                    } else {
-
-                        friendRequests.push({
-
-                            friendshipId:
-                                friendship.id,
-
-                            userId:
-                                otherUserId,
-
-                            requesterId:
-                                friendship.requester_id,
-
-                            addresseeId:
-                                friendship.addressee_id,
-
-                            status
-
-                        });
-
+        const {
+            data: viewsData,
+            error: viewsError
+        } =
+            await supabaseClient
+                .from("instant_views")
+                .select(
+                    "id, viewer_id, viewed_at"
+                )
+                .eq(
+                    "instant_id",
+                    instantId
+                )
+                .order(
+                    "viewed_at",
+                    {
+                        ascending: false
                     }
-
-                }
-
-            }
-        );
-
-        let profiles =
-            [];
-
-        if (otherUserIds.length) {
-
-            const {
-                data: profileData,
-                error: profileError
-            } =
-                await supabaseClient
-                    .from("profiles")
-                    .select(`
-                        id,
-                        username,
-                        display_name,
-                        avatar_url
-                    `)
-                    .in(
-                        "id",
-                        otherUserIds
-                    );
-
-            if (profileError) {
-                throw profileError;
-            }
-
-            profiles =
-                profileData || [];
-
-        }
-
-        const profileMap =
-            new Map(
-                profiles.map(
-                    profile => [
-
-                        profile.id,
-                        profile
-
-                    ]
-                )
-            );
-
-        friends =
-            friends.map(
-                item => ({
-
-                    ...item,
-
-                    profile:
-                        profileMap.get(
-                            item.userId
-                        ) || null
-
-                })
-            );
-
-        friendRequests =
-            friendRequests.map(
-                item => ({
-
-                    ...item,
-
-                    profile:
-                        profileMap.get(
-                            item.userId
-                        ) || null
-
-                })
-            );
-
-        sentFriendRequests =
-            sentFriendRequests.map(
-                item => ({
-
-                    ...item,
-
-                    profile:
-                        profileMap.get(
-                            item.userId
-                        ) || null
-
-                })
-            );
-
-        renderFriendUI();
-
-    } catch (error) {
-
-        console.error(
-            "Load friendships error:",
-            error
-        );
-
-    } finally {
-
-        loadingFriends =
-            false;
-
-    }
-
-}
-
-
-/* =====================================================
-   SEND FRIEND REQUEST
-===================================================== */
-
-async function sendFriendRequest(
-    userId
-) {
-
-    if (
-        !currentUser ||
-        !userId ||
-        userId === currentUser.id
-    ) {
-
-        return;
-
-    }
-
-    const state =
-        getFriendshipState(
-            userId
-        );
-
-    if (
-        state !==
-        "none"
-    ) {
-
-        return;
-
-    }
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from("friendships")
-                .insert({
-
-                    requester_id:
-                        currentUser.id,
-
-                    addressee_id:
-                        userId,
-
-                    status:
-                        "pending"
-
-                })
-                .select()
-                .single();
-
-        if (error) {
-            throw error;
-        }
-
-        console.log(
-            "Friend request sent:",
-            data
-        );
-
-        await loadFriendData();
-
-    } catch (error) {
-
-        console.error(
-            "Send friend request error:",
-            error
-        );
-
-        alert(
-            error?.message ||
-            "Could not send friend request."
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   ACCEPT FRIEND REQUEST
-===================================================== */
-
-async function acceptFriendRequest(
-    friendshipId
-) {
-
-    if (!currentUser || !friendshipId) {
-        return;
-    }
-
-    try {
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("friendships")
-                .update({
-
-                    status:
-                        "accepted"
-
-                })
-                .eq(
-                    "id",
-                    friendshipId
-                )
-                .eq(
-                    "addressee_id",
-                    currentUser.id
                 );
 
-        if (error) {
-            throw error;
+        if (viewsError) {
+            throw viewsError;
         }
 
-        await loadFriendData();
-
-    } catch (error) {
-
-        console.error(
-            "Accept friend request error:",
-            error
-        );
-
-        alert(
-            error?.message ||
-            "Could not accept request."
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   REJECT FRIEND REQUEST
-===================================================== */
-
-async function rejectFriendRequest(
-    friendshipId
-) {
-
-    if (!currentUser || !friendshipId) {
-        return;
-    }
-
-    try {
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("friendships")
-                .delete()
-                .eq(
-                    "id",
-                    friendshipId
-                )
-                .eq(
-                    "addressee_id",
-                    currentUser.id
-                );
-
-        if (error) {
-            throw error;
-        }
-
-        await loadFriendData();
-
-    } catch (error) {
-
-        console.error(
-            "Reject friend request error:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   CANCEL FRIEND REQUEST
-===================================================== */
-
-async function cancelFriendRequest(
-    friendshipId
-) {
-
-    if (!currentUser || !friendshipId) {
-        return;
-    }
-
-    try {
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("friendships")
-                .delete()
-                .eq(
-                    "id",
-                    friendshipId
-                )
-                .eq(
-                    "requester_id",
-                    currentUser.id
-                );
-
-        if (error) {
-            throw error;
-        }
-
-        await loadFriendData();
-
-    } catch (error) {
-
-        console.error(
-            "Cancel friend request error:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   REMOVE FRIEND
-===================================================== */
-
-async function removeFriend(
-    friendshipId
-) {
-
-    if (!currentUser || !friendshipId) {
-        return;
-    }
-
-    try {
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("friendships")
-                .delete()
-                .eq(
-                    "id",
-                    friendshipId
-                );
-
-        if (error) {
-            throw error;
-        }
-
-        await loadFriendData();
-
-    } catch (error) {
-
-        console.error(
-            "Remove friend error:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   FRIEND SEARCH
-===================================================== */
-
-const friendSearch =
-    document.getElementById(
-        "friendSearch"
-    );
-
-if (friendSearch) {
-
-    friendSearch.addEventListener(
-        "input",
-        async () => {
-
-            currentFriendSearch =
-                friendSearch.value
-                    .trim()
-                    .toLowerCase();
-
-            await searchProfiles(
-                currentFriendSearch
-            );
-
-        }
-    );
-
-}
-
-
-/* =====================================================
-   SEARCH PROFILES
-===================================================== */
-
-async function searchProfiles(
-    query
-) {
-
-    if (!currentUser) {
-        return;
-    }
-
-    const people =
-        document.querySelectorAll(
-            ".person-row"
-        );
-
-    /*
-     * If the existing HTML already contains
-     * person rows, filter them locally.
-     */
-
-    if (!query) {
-
-        people.forEach(
-            person => {
-
-                person.style.display =
-                    "flex";
-
-            }
-        );
-
-        return;
-
-    }
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from("profiles")
-                .select(`
-                    id,
-                    username,
-                    display_name,
-                    avatar_url
-                `)
-                .neq(
-                    "id",
-                    currentUser.id
-                )
-                .or(
-                    `username.ilike.%${escapeSearchValue(query)}%,display_name.ilike.%${escapeSearchValue(query)}%`
-                )
-                .limit(
-                    30
-                );
-
-        if (error) {
-            throw error;
-        }
-
-        renderSearchResults(
-            data || []
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Profile search error:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   ESCAPE SEARCH VALUE
-===================================================== */
-
-function escapeSearchValue(
-    value
-) {
-
-    return String(
-        value || ""
-    )
-        .replace(
-            /[%_]/g,
-            "\\$&"
-        )
-        .replace(
-            /[(),]/g,
-            ""
-        );
-
-}
-
-
-/* =====================================================
-   RENDER SEARCH RESULTS
-===================================================== */
-
-function renderSearchResults(
-    profiles
-) {
-
-    const container =
-        document.querySelector(
-            ".people-list"
-        ) ||
-        document.getElementById(
-            "peopleList"
-        ) ||
-        document.getElementById(
-            "searchResults"
-        );
-
-    if (!container) {
+        const likes =
+            likesData || [];
+
+        const views =
+            viewsData || [];
+
+        stats.innerHTML =
+            `
+                <strong>
+                    ♥ ${likes.length} likes
+                </strong>
+
+                <strong>
+                    👀 ${views.length} seen
+                </strong>
+            `;
 
         /*
-         * Existing static HTML may not have
-         * a dedicated search container.
-         *
-         * In that case we simply leave the
-         * existing rows untouched.
+         * Only the owner should see
+         * the complete viewers list.
          */
 
-        return;
+        if (
+            mine ||
+            instant.user_id ===
+            currentUser.id
+        ) {
 
-    }
+            const userIds =
+                [
+                    ...new Set(
+                        [
+                            ...likes.map(
+                                like =>
+                                    like.user_id
+                            ),
+                            ...views.map(
+                                view =>
+                                    view.viewer_id
+                            )
+                        ]
+                    )
+                ];
 
-    if (!profiles.length) {
+            let profiles = [];
 
-        container.innerHTML = `
+            if (userIds.length) {
 
-            <div class="people-empty">
-
-                <strong>
-                    No users found
-                </strong>
-
-                <span>
-                    Try another username or name.
-                </span>
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-    container.innerHTML =
-        profiles
-            .map(
-                profile => {
-
-                    const state =
-                        getFriendshipState(
-                            profile.id
+                const {
+                    data,
+                    error
+                } =
+                    await supabaseClient
+                        .from("profiles")
+                        .select(
+                            "id, username, display_name"
+                        )
+                        .in(
+                            "id",
+                            userIds
                         );
 
-                    return createPersonRow(
-                        profile,
-                        state
-                    );
-
-                }
-            )
-            .join("");
-
-    bindFriendButtons();
-
-}
-
-
-/* =====================================================
-   CREATE PERSON ROW
-===================================================== */
-
-function createPersonRow(
-    profile,
-    state
-) {
-
-    const name =
-        escapeHTML(
-            profile.display_name ||
-            "User"
-        );
-
-    const username =
-        escapeHTML(
-            profile.username ||
-            "user"
-        );
-
-    const avatar =
-        escapeHTML(
-            (
-                profile.display_name ||
-                profile.username ||
-                "U"
-            )
-                .charAt(0)
-                .toUpperCase()
-        );
-
-    let buttonText =
-        "Add";
-
-    let buttonAction =
-        "send";
-
-    if (
-        state ===
-        "friends"
-    ) {
-
-        buttonText =
-            "Friends";
-
-        buttonAction =
-            "remove";
-
-    } else if (
-        state ===
-        "outgoing"
-    ) {
-
-        buttonText =
-            "Requested";
-
-        buttonAction =
-            "cancel";
-
-    } else if (
-        state ===
-        "incoming"
-    ) {
-
-        buttonText =
-            "Accept";
-
-        buttonAction =
-            "accept";
-
-    }
-
-    return `
-
-        <div
-            class="person-row"
-            data-user-id="${escapeHTML(profile.id)}"
-        >
-
-            <div class="person-avatar">
-                ${avatar}
-            </div>
-
-            <div class="person-info">
-
-                <strong>
-                    ${name}
-                </strong>
-
-                <span>
-                    @${username}
-                </span>
-
-            </div>
-
-            <button
-                type="button"
-                class="friend-action-button"
-                data-action="${buttonAction}"
-                data-user-id="${escapeHTML(profile.id)}"
-            >
-                ${buttonText}
-            </button>
-
-        </div>
-
-    `;
-
-}
-
-
-/* =====================================================
-   RENDER FRIEND UI
-===================================================== */
-
-function renderFriendUI() {
-
-    const requestContainer =
-        document.getElementById(
-            "friendRequestsList"
-        );
-
-    if (requestContainer) {
-
-        if (!friendRequests.length) {
-
-            requestContainer.innerHTML = `
-
-                <div class="people-empty">
-
-                    <strong>
-                        No friend requests
-                    </strong>
-
-                    <span>
-                        You're all caught up.
-                    </span>
-
-                </div>
-
-            `;
-
-        } else {
-
-            requestContainer.innerHTML =
-                friendRequests
-                    .map(
-                        request => {
-
-                            const profile =
-                                request.profile || {};
-
-                            return createRequestRow(
-                                request,
-                                profile
-                            );
-
-                        }
-                    )
-                    .join("");
-
-        }
-
-    }
-
-    const friendsContainer =
-        document.getElementById(
-            "friendsList"
-        );
-
-    if (friendsContainer) {
-
-        if (!friends.length) {
-
-            friendsContainer.innerHTML = `
-
-                <div class="people-empty">
-
-                    <strong>
-                        No friends yet
-                    </strong>
-
-                    <span>
-                        Add people to start building your circle.
-                    </span>
-
-                </div>
-
-            `;
-
-        } else {
-
-            friendsContainer.innerHTML =
-                friends
-                    .map(
-                        friend => {
-
-                            const profile =
-                                friend.profile ||
-                                {};
-
-                            return createFriendRow(
-                                friend,
-                                profile
-                            );
-
-                        }
-                    )
-                    .join("");
-
-        }
-
-    }
-
-    const requestCount =
-        document.getElementById(
-            "requestCount"
-        );
-
-    if (requestCount) {
-
-        requestCount.textContent =
-            friendRequests.length;
-
-        requestCount.style.display =
-            friendRequests.length
-                ? ""
-                : "none";
-
-    }
-
-    bindFriendButtons();
-
-}
-
-
-/* =====================================================
-   CREATE REQUEST ROW
-===================================================== */
-
-function createRequestRow(
-    request,
-    profile
-) {
-
-    const name =
-        escapeHTML(
-            profile.display_name ||
-            "User"
-        );
-
-    const username =
-        escapeHTML(
-            profile.username ||
-            "user"
-        );
-
-    const avatar =
-        escapeHTML(
-            (
-                profile.display_name ||
-                profile.username ||
-                "U"
-            )
-                .charAt(0)
-                .toUpperCase()
-        );
-
-    return `
-
-        <div
-            class="person-row"
-            data-user-id="${escapeHTML(request.userId)}"
-        >
-
-            <div class="person-avatar">
-                ${avatar}
-            </div>
-
-            <div class="person-info">
-
-                <strong>
-                    ${name}
-                </strong>
-
-                <span>
-                    @${username}
-                </span>
-
-            </div>
-
-            <div class="friend-request-actions">
-
-                <button
-                    type="button"
-                    class="friend-action-button"
-                    data-action="accept"
-                    data-friendship-id="${escapeHTML(request.friendshipId)}"
-                >
-                    Accept
-                </button>
-
-                <button
-                    type="button"
-                    class="friend-action-button secondary"
-                    data-action="reject"
-                    data-friendship-id="${escapeHTML(request.friendshipId)}"
-                >
-                    Reject
-                </button>
-
-            </div>
-
-        </div>
-
-    `;
-
-}
-
-
-/* =====================================================
-   CREATE FRIEND ROW
-===================================================== */
-
-function createFriendRow(
-    friend,
-    profile
-) {
-
-    const name =
-        escapeHTML(
-            profile.display_name ||
-            "User"
-        );
-
-    const username =
-        escapeHTML(
-            profile.username ||
-            "user"
-        );
-
-    const avatar =
-        escapeHTML(
-            (
-                profile.display_name ||
-                profile.username ||
-                "U"
-            )
-                .charAt(0)
-                .toUpperCase()
-        );
-
-    return `
-
-        <div
-            class="person-row"
-            data-user-id="${escapeHTML(friend.userId)}"
-        >
-
-            <div class="person-avatar">
-                ${avatar}
-            </div>
-
-            <div class="person-info">
-
-                <strong>
-                    ${name}
-                </strong>
-
-                <span>
-                    @${username}
-                </span>
-
-            </div>
-
-            <button
-                type="button"
-                class="friend-action-button secondary"
-                data-action="remove"
-                data-friendship-id="${escapeHTML(friend.friendshipId)}"
-            >
-                Friends
-            </button>
-
-        </div>
-
-    `;
-
-}
-
-
-/* =====================================================
-   FRIEND BUTTON EVENTS
-===================================================== */
-
-function bindFriendButtons() {
-
-    document
-        .querySelectorAll(
-            ".friend-action-button"
-        )
-        .forEach(
-            button => {
-
-                if (
-                    button.dataset.bound ===
-                    "true"
-                ) {
-
-                    return;
-
+                if (error) {
+                    throw error;
                 }
 
-                button.dataset.bound =
-                    "true";
-
-                button.addEventListener(
-                    "click",
-                    async event => {
-
-                        event.preventDefault();
-
-                        const action =
-                            button.dataset.action;
-
-                        const userId =
-                            button.dataset.userId;
-
-                        const friendshipId =
-                            button.dataset.friendshipId;
-
-                        button.disabled =
-                            true;
-
-                        try {
-
-                            if (
-                                action ===
-                                "send"
-                            ) {
-
-                                await sendFriendRequest(
-                                    userId
-                                );
-
-                            } else if (
-                                action ===
-                                "accept"
-                            ) {
-
-                                await acceptFriendRequest(
-                                    friendshipId
-                                );
-
-                            } else if (
-                                action ===
-                                "reject"
-                            ) {
-
-                                await rejectFriendRequest(
-                                    friendshipId
-                                );
-
-                            } else if (
-                                action ===
-                                "cancel"
-                            ) {
-
-                                await cancelFriendRequest(
-                                    friendshipId
-                                );
-
-                            } else if (
-                                action ===
-                                "remove"
-                            ) {
-
-                                await removeFriend(
-                                    friendshipId
-                                );
-
-                            }
-
-                        } finally {
-
-                            button.disabled =
-                                false;
-
-                        }
-
-                    }
-                );
+                profiles =
+                    data || [];
 
             }
-        );
 
-}
+            const profileMap =
+                new Map(
+                    profiles.map(
+                        profile => [
+                            profile.id,
+                            profile
+                        ]
+                    )
+                );
 
+            const likerRows =
+                likes
+                    .map(
+                        like => {
 
-/* =====================================================
-   REQUESTS BUTTON
-===================================================== */
+                            const profile =
+                                profileMap.get(
+                                    like.user_id
+                                );
 
-const requestsButton =
-    document.getElementById(
-        "requestsButton"
-    );
+                            return `
+                                <div
+                                    style="
+                                        padding:10px 0;
+                                        border-bottom:1px solid #292929;
+                                    "
+                                >
+                                    ♥
+                                    ${escapeHTML(
+                                        profile?.display_name ||
+                                        "User"
+                                    )}
 
-if (requestsButton) {
+                                    <small>
+                                        @${escapeHTML(
+                                            profile?.username ||
+                                            "user"
+                                        )}
+                                    </small>
+                                </div>
+                            `;
 
-    requestsButton.addEventListener(
-        "click",
-        async () => {
+                        }
+                    )
+                    .join("");
 
-            await loadFriendData();
+            const viewerRows =
+                views
+                    .map(
+                        view => {
 
-            showScreen(
-                "requestsScreen"
-            );
+                            const profile =
+                                profileMap.get(
+                                    view.viewer_id
+                                );
 
-        }
-    );
+                            return `
+                                <div
+                                    style="
+                                        padding:10px 0;
+                                        border-bottom:1px solid #292929;
+                                    "
+                                >
+                                    👀
+                                    ${escapeHTML(
+                                        profile?.display_name ||
+                                        "User"
+                                    )}
 
-}
+                                    <small>
+                                        @${escapeHTML(
+                                            profile?.username ||
+                                            "user"
+                                        )}
+                                    </small>
+                                </div>
+                            `;
 
+                        }
+                    )
+                    .join("");
 
-/* =====================================================
-   FRIEND TABS
-===================================================== */
+            body.innerHTML =
+                `
+                    <h3>
+                        Likes
+                    </h3>
 
-document
-    .querySelectorAll(
-        ".friend-tab"
-    )
-    .forEach(
-        tab => {
-
-            tab.addEventListener(
-                "click",
-                async () => {
-
-                    document
-                        .querySelectorAll(
-                            ".friend-tab"
-                        )
-                        .forEach(
-                            item =>
-                                item.classList
-                                    .remove(
-                                        "active"
-                                    )
-                        );
-
-                    tab.classList.add(
-                        "active"
-                    );
-
-                    await loadFriendData();
-
-                    if (
-                        tab.dataset.tab ===
-                        "requests"
-                    ) {
-
-                        showScreen(
-                            "requestsScreen"
-                        );
-
+                    ${
+                        likerRows ||
+                        "<p>No likes yet.</p>"
                     }
 
-                }
-            );
+                    <h3
+                        style="
+                            margin-top:24px;
+                        "
+                    >
+                        Seen by
+                    </h3>
+
+                    ${
+                        viewerRows ||
+                        "<p>No views yet.</p>"
+                    }
+                `;
+
+        } else {
+
+            body.innerHTML =
+                `
+                    <p>
+                        Likes: ${likes.length}
+                    </p>
+
+                    <p>
+                        Seen: ${views.length}
+                    </p>
+                `;
 
         }
-    );
+
+    } catch (error) {
+
+        console.error(
+            "Instant details error:",
+            error
+        );
+
+        body.innerHTML =
+            `
+                <p>
+                    Unable to load Instant details.
+                </p>
+            `;
+
+    }
+
+}
 
 
 /* =====================================================
@@ -5474,6 +5316,26 @@ document.addEventListener(
             event.key !==
             "Escape"
         ) {
+
+            return;
+
+        }
+
+        const details =
+            document.getElementById(
+                "instantDetailsModal"
+            );
+
+        if (
+            details &&
+            details.classList.contains(
+                "show"
+            )
+        ) {
+
+            details.classList.remove(
+                "show"
+            );
 
             return;
 
@@ -5515,9 +5377,7 @@ document.addEventListener(
     "visibilitychange",
     () => {
 
-        if (
-            document.hidden
-        ) {
+        if (document.hidden) {
 
             stopCamera();
 
@@ -5533,7 +5393,7 @@ document.addEventListener(
 
 window.addEventListener(
     "focus",
-    () => {
+    async () => {
 
         if (!currentUser) {
             return;
@@ -5550,11 +5410,11 @@ window.addEventListener(
 
         }
 
-        loadInstants();
+        await loadSocialData();
 
-        loadMyInstants();
+        await loadInstants();
 
-        loadFriendData();
+        await loadMyInstants();
 
     }
 );
@@ -5564,8 +5424,6 @@ window.addEventListener(
    INITIALIZE
 ===================================================== */
 
-setAuthMode(
-    "login"
-);
+setAuthMode("login");
 
 initializeAuth();
