@@ -1,6 +1,11 @@
 /* =====================================================
    L7ZA — PHASE 3
-   AUTH + PHASE 2 CAMERA
+   AUTH + CAMERA + REAL INSTANTS
+   FIXED:
+   - MY INSTANTS
+   - CARD STACKING
+   - USER NAMES
+   - MOBILE / DESKTOP SCROLL
 ===================================================== */
 
 
@@ -12,8 +17,7 @@ const SUPABASE_URL =
     "https://ogxbaalnebmmqxneypuy.supabase.co";
 
 const SUPABASE_KEY =
-    "sb_publishable_ksfgbcVqNa6P8GRahVhDYA_KLK30bt7";
-
+    "sb_publishable_ksfgbcVqNa6P8GRrahVhDYA_KLK30bt7";
 
 const supabaseClient =
     window.supabase.createClient(
@@ -27,7 +31,6 @@ const supabaseClient =
 ===================================================== */
 
 let currentUser = null;
-
 let currentProfile = null;
 
 
@@ -36,65 +39,40 @@ let currentProfile = null;
 ===================================================== */
 
 const authScreen =
-    document.getElementById(
-        "authScreen"
-    );
+    document.getElementById("authScreen");
 
 const mainApp =
-    document.getElementById(
-        "mainApp"
-    );
+    document.getElementById("mainApp");
 
 const authTitle =
-    document.getElementById(
-        "authTitle"
-    );
+    document.getElementById("authTitle");
 
 const authSubtitle =
-    document.getElementById(
-        "authSubtitle"
-    );
+    document.getElementById("authSubtitle");
 
 const authSubmit =
-    document.getElementById(
-        "authSubmit"
-    );
+    document.getElementById("authSubmit");
 
 const authSwitch =
-    document.getElementById(
-        "authSwitch"
-    );
+    document.getElementById("authSwitch");
 
 const authMessage =
-    document.getElementById(
-        "authMessage"
-    );
+    document.getElementById("authMessage");
 
 const authEmail =
-    document.getElementById(
-        "authEmail"
-    );
+    document.getElementById("authEmail");
 
 const authPassword =
-    document.getElementById(
-        "authPassword"
-    );
+    document.getElementById("authPassword");
 
 const authDisplayName =
-    document.getElementById(
-        "authDisplayName"
-    );
+    document.getElementById("authDisplayName");
 
 const authUsername =
-    document.getElementById(
-        "authUsername"
-    );
+    document.getElementById("authUsername");
 
 const signupFields =
-    document.querySelectorAll(
-        ".signup-only"
-    );
-
+    document.querySelectorAll(".signup-only");
 
 let authMode = "login";
 
@@ -107,9 +85,7 @@ function setAuthMode(mode) {
 
     authMode = mode;
 
-
     clearAuthMessage();
-
 
     if (mode === "signup") {
 
@@ -128,20 +104,12 @@ function setAuthMode(mode) {
                 <strong>Sign in</strong>
             `;
 
-
-        signupFields.forEach(
-            field => {
-
-                field.style.display =
-                    "block";
-
-            }
-        );
-
+        signupFields.forEach(field => {
+            field.style.display = "block";
+        });
 
         authPassword.autocomplete =
             "new-password";
-
 
     } else {
 
@@ -160,37 +128,32 @@ function setAuthMode(mode) {
                 <strong>Sign up</strong>
             `;
 
-
-        signupFields.forEach(
-            field => {
-
-                field.style.display =
-                    "none";
-
-            }
-        );
-
+        signupFields.forEach(field => {
+            field.style.display = "none";
+        });
 
         authPassword.autocomplete =
             "current-password";
-
     }
-
 }
 
 
-authSwitch.addEventListener(
-    "click",
-    () => {
+if (authSwitch) {
 
-        setAuthMode(
-            authMode === "login"
-                ? "signup"
-                : "login"
-        );
+    authSwitch.addEventListener(
+        "click",
+        () => {
 
-    }
-);
+            setAuthMode(
+                authMode === "login"
+                    ? "signup"
+                    : "login"
+            );
+
+        }
+    );
+
+}
 
 
 /* =====================================================
@@ -202,32 +165,33 @@ function showAuthMessage(
     type = ""
 ) {
 
+    if (!authMessage) {
+        return;
+    }
+
     authMessage.textContent =
         message;
 
     authMessage.className =
         "auth-message";
 
-
     if (type) {
-
-        authMessage.classList.add(
-            type
-        );
-
+        authMessage.classList.add(type);
     }
-
 }
 
 
 function clearAuthMessage() {
+
+    if (!authMessage) {
+        return;
+    }
 
     authMessage.textContent =
         "";
 
     authMessage.className =
         "auth-message";
-
 }
 
 
@@ -235,9 +199,7 @@ function clearAuthMessage() {
    AUTH VALIDATION
 ===================================================== */
 
-function validateUsername(
-    username
-) {
+function validateUsername(username) {
 
     return /^[a-zA-Z0-9_]{3,24}$/
         .test(username);
@@ -255,7 +217,6 @@ function validateSignup() {
             .trim()
             .toLowerCase();
 
-
     if (!displayName) {
 
         showAuthMessage(
@@ -264,15 +225,9 @@ function validateSignup() {
         );
 
         return null;
-
     }
 
-
-    if (
-        !validateUsername(
-            username
-        )
-    ) {
+    if (!validateUsername(username)) {
 
         showAuthMessage(
             "Username must be 3–24 characters using letters, numbers, or _.",
@@ -280,15 +235,12 @@ function validateSignup() {
         );
 
         return null;
-
     }
-
 
     return {
         displayName,
         username
     };
-
 }
 
 
@@ -300,17 +252,12 @@ async function signUp() {
 
     clearAuthMessage();
 
-
     const signup =
         validateSignup();
 
-
     if (!signup) {
-
         return;
-
     }
-
 
     const email =
         authEmail.value
@@ -320,7 +267,6 @@ async function signUp() {
     const password =
         authPassword.value;
 
-
     if (!email) {
 
         showAuthMessage(
@@ -329,13 +275,9 @@ async function signUp() {
         );
 
         return;
-
     }
 
-
-    if (
-        password.length < 6
-    ) {
+    if (password.length < 6) {
 
         showAuthMessage(
             "Password must be at least 6 characters.",
@@ -343,18 +285,11 @@ async function signUp() {
         );
 
         return;
-
     }
-
 
     setAuthLoading(true);
 
-
     try {
-
-        /*
-            Check username first.
-        */
 
         const {
             data: existingProfile,
@@ -369,13 +304,9 @@ async function signUp() {
                 )
                 .maybeSingle();
 
-
         if (usernameError) {
-
             throw usernameError;
-
         }
-
 
         if (existingProfile) {
 
@@ -387,53 +318,35 @@ async function signUp() {
             setAuthLoading(false);
 
             return;
-
         }
-
-
-        /*
-            Create Auth account.
-        */
 
         const {
             data,
             error
         } =
-            await supabaseClient.auth
-                .signUp({
+            await supabaseClient.auth.signUp({
 
-                    email,
+                email,
+                password,
 
-                    password,
+                options: {
 
-                    options: {
+                    data: {
 
-                        data: {
+                        username:
+                            signup.username,
 
-                            username:
-                                signup.username,
-
-                            display_name:
-                                signup.displayName
-
-                        }
-
+                        display_name:
+                            signup.displayName
                     }
 
-                });
+                }
 
+            });
 
         if (error) {
-
             throw error;
-
         }
-
-
-        /*
-            If email confirmation is enabled,
-            session may be null.
-        */
 
         if (!data.session) {
 
@@ -442,24 +355,17 @@ async function signUp() {
                 "success"
             );
 
-
-            authPassword.value =
-                "";
-
+            authPassword.value = "";
 
             setAuthLoading(false);
 
             return;
-
         }
-
 
         currentUser =
             data.user;
 
-
         await loadCurrentProfile();
-
 
         showMainApp();
 
@@ -469,7 +375,6 @@ async function signUp() {
             "Sign up error:",
             error
         );
-
 
         showAuthMessage(
             getAuthErrorMessage(error),
@@ -493,7 +398,6 @@ async function signIn() {
 
     clearAuthMessage();
 
-
     const email =
         authEmail.value
             .trim()
@@ -501,7 +405,6 @@ async function signIn() {
 
     const password =
         authPassword.value;
-
 
     if (!email || !password) {
 
@@ -511,12 +414,9 @@ async function signIn() {
         );
 
         return;
-
     }
 
-
     setAuthLoading(true);
-
 
     try {
 
@@ -528,25 +428,18 @@ async function signIn() {
                 .signInWithPassword({
 
                     email,
-
                     password
 
                 });
 
-
         if (error) {
-
             throw error;
-
         }
-
 
         currentUser =
             data.user;
 
-
         await loadCurrentProfile();
-
 
         showMainApp();
 
@@ -556,7 +449,6 @@ async function signIn() {
             "Sign in error:",
             error
         );
-
 
         showAuthMessage(
             getAuthErrorMessage(error),
@@ -576,24 +468,26 @@ async function signIn() {
    AUTH SUBMIT
 ===================================================== */
 
-authSubmit.addEventListener(
-    "click",
-    async () => {
+if (authSubmit) {
 
-        if (
-            authMode === "signup"
-        ) {
+    authSubmit.addEventListener(
+        "click",
+        async () => {
 
-            await signUp();
+            if (authMode === "signup") {
 
-        } else {
+                await signUp();
 
-            await signIn();
+            } else {
+
+                await signIn();
+
+            }
 
         }
+    );
 
-    }
-);
+}
 
 
 /* =====================================================
@@ -605,40 +499,39 @@ authSubmit.addEventListener(
     authPassword,
     authDisplayName,
     authUsername
-].forEach(
-    input => {
+]
+.forEach(input => {
 
-        input.addEventListener(
-            "keydown",
-            event => {
-
-                if (
-                    event.key ===
-                    "Enter"
-                ) {
-
-                    authSubmit.click();
-
-                }
-
-            }
-        );
-
+    if (!input) {
+        return;
     }
-);
+
+    input.addEventListener(
+        "keydown",
+        event => {
+
+            if (event.key === "Enter") {
+                authSubmit.click();
+            }
+
+        }
+    );
+
+});
 
 
 /* =====================================================
    AUTH LOADING
 ===================================================== */
 
-function setAuthLoading(
-    loading
-) {
+function setAuthLoading(loading) {
+
+    if (!authSubmit) {
+        return;
+    }
 
     authSubmit.disabled =
         loading;
-
 
     if (loading) {
 
@@ -660,72 +553,61 @@ function setAuthLoading(
 
 
 /* =====================================================
-   AUTH ERROR MESSAGE
+   AUTH ERROR
 ===================================================== */
 
-function getAuthErrorMessage(
-    error
-) {
+function getAuthErrorMessage(error) {
 
     const message =
-        error?.message ||
-        "";
+        error?.message || "";
 
+    const lower =
+        message.toLowerCase();
 
     if (
-        message
-            .toLowerCase()
-            .includes(
-                "invalid login credentials"
-            )
+        lower.includes(
+            "invalid login credentials"
+        )
     ) {
 
         return "Incorrect email or password.";
 
     }
 
-
     if (
-        message
-            .toLowerCase()
-            .includes(
-                "email not confirmed"
-            )
+        lower.includes(
+            "email not confirmed"
+        )
     ) {
 
         return "Please confirm your email before signing in.";
 
     }
 
-
     if (
-        message
-            .toLowerCase()
-            .includes(
-                "user already registered"
-            )
+        lower.includes(
+            "user already registered"
+        )
     ) {
 
         return "An account with this email already exists.";
 
     }
 
-
     if (
-        message
-            .toLowerCase()
-            .includes(
-                "password should be at least"
-            )
+        lower.includes(
+            "password should be at least"
+        )
     ) {
 
         return "Your password is too short.";
 
     }
 
-
-    return message ||
-        "Something went wrong. Please try again.";
+    return (
+        message ||
+        "Something went wrong. Please try again."
+    );
 
 }
 
@@ -737,11 +619,8 @@ function getAuthErrorMessage(
 async function loadCurrentProfile() {
 
     if (!currentUser) {
-
         return;
-
     }
-
 
     const {
         data,
@@ -756,7 +635,6 @@ async function loadCurrentProfile() {
             )
             .maybeSingle();
 
-
     if (error) {
 
         console.error(
@@ -765,36 +643,23 @@ async function loadCurrentProfile() {
         );
 
         return;
-
     }
-
 
     currentProfile =
         data;
 
-
-    /*
-        In the unlikely event the trigger
-        didn't create the profile yet,
-        create it manually.
-    */
-
     if (!currentProfile) {
 
         const metadata =
-            currentUser.user_metadata ||
-            {};
-
+            currentUser.user_metadata || {};
 
         const username =
             metadata.username ||
             `user_${currentUser.id.slice(0, 8)}`;
 
-
         const displayName =
             metadata.display_name ||
             "New User";
-
 
         const {
             data: createdProfile,
@@ -816,7 +681,6 @@ async function loadCurrentProfile() {
                 .select()
                 .single();
 
-
         if (createError) {
 
             console.error(
@@ -825,18 +689,13 @@ async function loadCurrentProfile() {
             );
 
             return;
-
         }
-
 
         currentProfile =
             createdProfile;
-
     }
 
-
     updateProfileUI();
-
 }
 
 
@@ -847,11 +706,8 @@ async function loadCurrentProfile() {
 function updateProfileUI() {
 
     if (!currentProfile) {
-
         return;
-
     }
-
 
     const name =
         currentProfile.display_name ||
@@ -860,7 +716,6 @@ function updateProfileUI() {
     const username =
         currentProfile.username ||
         "user";
-
 
     const profileName =
         document.getElementById(
@@ -877,22 +732,14 @@ function updateProfileUI() {
             "profileAvatar"
         );
 
-
     if (profileName) {
-
-        profileName.textContent =
-            name;
-
+        profileName.textContent = name;
     }
-
 
     if (profileUsername) {
-
         profileUsername.textContent =
             `@${username}`;
-
     }
-
 
     if (profileAvatar) {
 
@@ -902,7 +749,6 @@ function updateProfileUI() {
                 .toUpperCase();
 
     }
-
 }
 
 
@@ -912,30 +758,19 @@ function updateProfileUI() {
 
 function showMainApp() {
 
-    authScreen.classList.add(
-        "hidden"
-    );
+    if (authScreen) {
+        authScreen.classList.add("hidden");
+    }
 
-    mainApp.classList.remove(
-        "hidden"
-    );
+    if (mainApp) {
+        mainApp.classList.remove("hidden");
+    }
 
-
-    document.body.style.overflow =
-        "";
-
+    document.body.style.overflow = "";
 
     updateProfileUI();
 
-
-    showScreen(
-        "homeScreen"
-    );
-
-
-    /*
-     * Load real Instants from Supabase.
-     */
+    showScreen("homeScreen");
 
     loadInstants();
 
@@ -950,32 +785,25 @@ function showAuth() {
 
     stopCamera();
 
+    if (captureModal) {
+        captureModal.classList.remove("show");
+    }
 
-    captureModal.classList.remove(
-        "show"
-    );
+    if (previewModal) {
+        previewModal.classList.remove("show");
+    }
 
-    previewModal.classList.remove(
-        "show"
-    );
+    if (mainApp) {
+        mainApp.classList.add("hidden");
+    }
 
+    if (authScreen) {
+        authScreen.classList.remove("hidden");
+    }
 
-    mainApp.classList.add(
-        "hidden"
-    );
+    document.body.style.overflow = "";
 
-    authScreen.classList.remove(
-        "hidden"
-    );
-
-
-    document.body.style.overflow =
-        "";
-
-
-    setAuthMode(
-        "login"
-    );
+    setAuthMode("login");
 
 }
 
@@ -989,35 +817,38 @@ const logoutButton =
         "logoutButton"
     );
 
+if (logoutButton) {
 
-logoutButton.addEventListener(
-    "click",
-    async () => {
+    logoutButton.addEventListener(
+        "click",
+        async () => {
 
-        try {
+            try {
 
-            await supabaseClient.auth
-                .signOut();
+                await supabaseClient.auth
+                    .signOut();
 
-        } catch (error) {
+            } catch (error) {
 
-            console.error(
-                "Logout error:",
-                error
-            );
+                console.error(
+                    "Logout error:",
+                    error
+                );
+
+            }
+
+            currentUser = null;
+            currentProfile = null;
+
+            instants = [];
+            currentIndex = 0;
+
+            showAuth();
 
         }
+    );
 
-
-        currentUser = null;
-
-        currentProfile = null;
-
-
-        showAuth();
-
-    }
-);
+}
 
 
 /* =====================================================
@@ -1035,26 +866,19 @@ async function initializeAuth() {
             await supabaseClient.auth
                 .getSession();
 
-
         if (error) {
-
             throw error;
-
         }
-
 
         const session =
             data.session;
-
 
         if (session?.user) {
 
             currentUser =
                 session.user;
 
-
             await loadCurrentProfile();
-
 
             showMainApp();
 
@@ -1071,7 +895,6 @@ async function initializeAuth() {
             error
         );
 
-
         showAuth();
 
     }
@@ -1080,7 +903,7 @@ async function initializeAuth() {
 
 
 /* =====================================================
-   AUTH STATE CHANGES
+   AUTH STATE
 ===================================================== */
 
 supabaseClient.auth.onAuthStateChange(
@@ -1089,20 +912,18 @@ supabaseClient.auth.onAuthStateChange(
         session
     ) => {
 
-        if (
-            event === "SIGNED_OUT"
-        ) {
+        if (event === "SIGNED_OUT") {
 
             currentUser = null;
-
             currentProfile = null;
+
+            instants = [];
+            currentIndex = 0;
 
             showAuth();
 
             return;
-
         }
-
 
         if (
             event === "SIGNED_IN" &&
@@ -1112,9 +933,7 @@ supabaseClient.auth.onAuthStateChange(
             currentUser =
                 session.user;
 
-
             await loadCurrentProfile();
-
 
             showMainApp();
 
@@ -1141,22 +960,18 @@ const navItems =
 
 function showScreen(screenId) {
 
-    screens.forEach(
-        screen => {
+    screens.forEach(screen => {
 
-            screen.classList.remove(
-                "active"
-            );
+        screen.classList.remove(
+            "active"
+        );
 
-        }
-    );
-
+    });
 
     const target =
         document.getElementById(
             screenId
         );
-
 
     if (target) {
 
@@ -1166,62 +981,56 @@ function showScreen(screenId) {
 
     }
 
+    navItems.forEach(item => {
 
-    navItems.forEach(
-        item => {
+        item.classList.remove(
+            "active"
+        );
 
-            item.classList.remove(
+        if (
+            item.dataset.screen ===
+            screenId
+        ) {
+
+            item.classList.add(
                 "active"
             );
 
-
-            if (
-                item.dataset.screen ===
-                screenId
-            ) {
-
-                item.classList.add(
-                    "active"
-                );
-
-            }
-
         }
-    );
 
+    });
+
+    /*
+     * Don't force the browser to smooth-scroll.
+     * This was contributing to awkward scrolling
+     * between screens.
+     */
 
     window.scrollTo({
         top: 0,
-        behavior: "smooth"
+        behavior: "auto"
     });
 
 }
 
 
-navItems.forEach(
-    item => {
+navItems.forEach(item => {
 
-        item.addEventListener(
-            "click",
-            () => {
+    item.addEventListener(
+        "click",
+        () => {
 
-                const screen =
-                    item.dataset.screen;
+            const screen =
+                item.dataset.screen;
 
-
-                if (screen) {
-
-                    showScreen(
-                        screen
-                    );
-
-                }
-
+            if (screen) {
+                showScreen(screen);
             }
-        );
 
-    }
-);
+        }
+    );
+
+});
 
 
 /* =====================================================
@@ -1229,25 +1038,21 @@ navItems.forEach(
 ===================================================== */
 
 document
-    .querySelectorAll(
-        ".back-button"
-    )
-    .forEach(
-        button => {
+    .querySelectorAll(".back-button")
+    .forEach(button => {
 
-            button.addEventListener(
-                "click",
-                () => {
+        button.addEventListener(
+            "click",
+            () => {
 
-                    showScreen(
-                        button.dataset.back
-                    );
+                showScreen(
+                    button.dataset.back
+                );
 
-                }
-            );
+            }
+        );
 
-        }
-    );
+    });
 
 
 /* =====================================================
@@ -1320,9 +1125,7 @@ const cameraErrorText =
 ===================================================== */
 
 let cameraStream = null;
-
 let cameraFacingMode = "user";
-
 let cameraOpening = false;
 
 
@@ -1332,43 +1135,29 @@ let cameraOpening = false;
 
 async function openCamera() {
 
-    /*
-        Safety:
-        camera can only open while authenticated.
-    */
-
     if (!currentUser) {
 
         showAuth();
 
         return;
-
     }
-
 
     if (cameraOpening) {
-
         return;
-
     }
 
-
     cameraOpening = true;
-
 
     captureModal.classList.add(
         "show"
     );
 
-
     document.body.style.overflow =
         "hidden";
-
 
     cameraError.classList.remove(
         "show"
     );
-
 
     try {
 
@@ -1381,9 +1170,7 @@ async function openCamera() {
             error
         );
 
-        showCameraError(
-            error
-        );
+        showCameraError(error);
 
     } finally {
 
@@ -1402,11 +1189,9 @@ async function startCamera() {
 
     stopCamera();
 
-
     cameraError.classList.remove(
         "show"
     );
-
 
     if (
         !navigator.mediaDevices ||
@@ -1419,7 +1204,6 @@ async function startCamera() {
 
     }
 
-
     const constraints = {
 
         audio: false,
@@ -1427,28 +1211,20 @@ async function startCamera() {
         video: {
 
             facingMode: {
-
-                ideal:
-                    cameraFacingMode
-
+                ideal: cameraFacingMode
             },
 
             width: {
-
                 ideal: 1920
-
             },
 
             height: {
-
                 ideal: 1080
-
             }
 
         }
 
     };
-
 
     cameraStream =
         await navigator.mediaDevices
@@ -1456,10 +1232,8 @@ async function startCamera() {
                 constraints
             );
 
-
     cameraVideo.srcObject =
         cameraStream;
-
 
     await cameraVideo.play();
 
@@ -1473,27 +1247,18 @@ async function startCamera() {
 function stopCamera() {
 
     if (!cameraStream) {
-
         return;
-
     }
-
 
     cameraStream
         .getTracks()
-        .forEach(
-            track => {
-
-                track.stop();
-
-            }
-        );
-
+        .forEach(track => {
+            track.stop();
+        });
 
     cameraStream = null;
 
-    cameraVideo.srcObject =
-        null;
+    cameraVideo.srcObject = null;
 
 }
 
@@ -1506,118 +1271,117 @@ function closeCamera() {
 
     stopCamera();
 
-
     captureModal.classList.remove(
         "show"
     );
 
-
-    document.body.style.overflow =
-        "";
+    document.body.style.overflow = "";
 
 }
 
 
-closeCapture.addEventListener(
-    "click",
-    closeCamera
-);
+if (closeCapture) {
+    closeCapture.addEventListener(
+        "click",
+        closeCamera
+    );
+}
 
-
-cancelCamera.addEventListener(
-    "click",
-    closeCamera
-);
+if (cancelCamera) {
+    cancelCamera.addEventListener(
+        "click",
+        closeCamera
+    );
+}
 
 
 /* =====================================================
-   OPEN CAMERA BUTTONS
+   CAMERA BUTTONS
 ===================================================== */
 
-captureButton.addEventListener(
-    "click",
-    openCamera
-);
+if (captureButton) {
 
+    captureButton.addEventListener(
+        "click",
+        openCamera
+    );
 
-navCamera.addEventListener(
-    "click",
-    openCamera
-);
+}
+
+if (navCamera) {
+
+    navCamera.addEventListener(
+        "click",
+        openCamera
+    );
+
+}
 
 
 /* =====================================================
    SWITCH CAMERA
 ===================================================== */
 
-switchCamera.addEventListener(
-    "click",
-    async () => {
+if (switchCamera) {
 
-        if (cameraOpening) {
+    switchCamera.addEventListener(
+        "click",
+        async () => {
 
-            return;
-
-        }
-
-
-        cameraFacingMode =
-            cameraFacingMode === "user"
-                ? "environment"
-                : "user";
-
-
-        try {
-
-            await startCamera();
-
-        } catch (error) {
-
-            console.error(
-                error
-            );
-
+            if (cameraOpening) {
+                return;
+            }
 
             cameraFacingMode =
                 cameraFacingMode === "user"
                     ? "environment"
                     : "user";
 
-
             try {
 
                 await startCamera();
 
-            } catch (secondError) {
+            } catch (error) {
 
-                showCameraError(
-                    secondError
-                );
+                console.error(error);
+
+                cameraFacingMode =
+                    cameraFacingMode === "user"
+                        ? "environment"
+                        : "user";
+
+                try {
+
+                    await startCamera();
+
+                } catch (secondError) {
+
+                    showCameraError(
+                        secondError
+                    );
+
+                }
 
             }
 
         }
+    );
 
-    }
-);
+}
 
 
 /* =====================================================
    CAMERA ERROR
 ===================================================== */
 
-function showCameraError(
-    error
-) {
+function showCameraError(error) {
 
     cameraError.classList.add(
         "show"
     );
 
-
     if (
-        error &&
-        error.name ===
+        error?.name ===
         "NotAllowedError"
     ) {
 
@@ -1625,13 +1389,10 @@ function showCameraError(
             "Camera permission was denied. Allow camera access in your browser settings, then try again.";
 
         return;
-
     }
 
-
     if (
-        error &&
-        error.name ===
+        error?.name ===
         "NotFoundError"
     ) {
 
@@ -1639,13 +1400,10 @@ function showCameraError(
             "No camera was found on this device.";
 
         return;
-
     }
 
-
     if (
-        error &&
-        error.name ===
+        error?.name ===
         "NotReadableError"
     ) {
 
@@ -1653,9 +1411,7 @@ function showCameraError(
             "The camera is being used by another application.";
 
         return;
-
     }
-
 
     cameraErrorText.textContent =
         error?.message ||
@@ -1664,28 +1420,32 @@ function showCameraError(
 }
 
 
-retryCamera.addEventListener(
-    "click",
-    async () => {
+if (retryCamera) {
 
-        try {
+    retryCamera.addEventListener(
+        "click",
+        async () => {
 
-            await startCamera();
+            try {
 
-        } catch (error) {
+                await startCamera();
 
-            showCameraError(
-                error
-            );
+            } catch (error) {
+
+                showCameraError(
+                    error
+                );
+
+            }
 
         }
+    );
 
-    }
-);
+}
 
 
 /* =====================================================
-   PREVIEW ELEMENTS
+   PREVIEW
 ===================================================== */
 
 const previewModal =
@@ -1713,10 +1473,14 @@ const discardButton =
    CAPTURE PHOTO
 ===================================================== */
 
-realCaptureButton.addEventListener(
-    "click",
-    capturePhoto
-);
+if (realCaptureButton) {
+
+    realCaptureButton.addEventListener(
+        "click",
+        capturePhoto
+    );
+
+}
 
 
 function capturePhoto() {
@@ -1727,9 +1491,7 @@ function capturePhoto() {
     ) {
 
         return;
-
     }
-
 
     const width =
         cameraVideo.videoWidth;
@@ -1737,19 +1499,14 @@ function capturePhoto() {
     const height =
         cameraVideo.videoHeight;
 
-
     cameraCanvas.width =
         width;
 
     cameraCanvas.height =
         height;
 
-
     const context =
-        cameraCanvas.getContext(
-            "2d"
-        );
-
+        cameraCanvas.getContext("2d");
 
     if (
         cameraFacingMode === "user"
@@ -1789,29 +1546,23 @@ function capturePhoto() {
 
     }
 
-
     const imageData =
         cameraCanvas.toDataURL(
             "image/jpeg",
             .92
         );
 
-
     capturedImage.src =
         imageData;
-
 
     capturedImage.dataset.image =
         imageData;
 
-
     stopCamera();
-
 
     captureModal.classList.remove(
         "show"
     );
-
 
     previewModal.classList.add(
         "show"
@@ -1824,39 +1575,43 @@ function capturePhoto() {
    DISCARD
 ===================================================== */
 
-discardButton.addEventListener(
-    "click",
-    discardPhoto
-);
+if (discardButton) {
+
+    discardButton.addEventListener(
+        "click",
+        discardPhoto
+    );
+
+}
 
 
 function discardPhoto() {
 
-    capturedImage.src =
-        "";
-
-    capturedImage.dataset.image =
-        "";
-
+    capturedImage.src = "";
+    capturedImage.dataset.image = "";
 
     previewModal.classList.remove(
         "show"
     );
-
 
     document.body.style.overflow =
         "";
 
 }
 
+
 /* =====================================================
    POST INSTANT
 ===================================================== */
 
-postInstantButton.addEventListener(
-    "click",
-    postInstant
-);
+if (postInstantButton) {
+
+    postInstantButton.addEventListener(
+        "click",
+        postInstant
+    );
+
+}
 
 
 async function postInstant() {
@@ -1866,60 +1621,34 @@ async function postInstant() {
         showAuth();
 
         return;
-
     }
-
 
     const imageData =
         capturedImage.dataset.image;
 
-
     if (!imageData) {
-
         return;
-
     }
-
 
     postInstantButton.disabled =
         true;
 
-
     postInstantButton.textContent =
         "Posting...";
 
-
     try {
 
-        /*
-         * Convert Base64 → Blob
-         */
-
         const response =
-            await fetch(
-                imageData
-            );
-
+            await fetch(imageData);
 
         const blob =
             await response.blob();
 
-
-        /*
-         * Unique storage path
-         */
-
         const fileName =
             `${crypto.randomUUID()}.jpg`;
 
-
         const filePath =
             `${currentUser.id}/${fileName}`;
-
-
-        /*
-         * Upload to PRIVATE bucket
-         */
 
         const {
             error: uploadError
@@ -1939,19 +1668,12 @@ async function postInstant() {
                     }
                 );
 
-
         if (uploadError) {
-
             throw uploadError;
-
         }
 
-
-        /*
-         * Create database row
-         */
-
         const {
+            data: insertedInstant,
             error: insertError
         } =
             await supabaseClient
@@ -1967,10 +1689,6 @@ async function postInstant() {
                     caption:
                         "",
 
-                    /*
-                     * 24 hours
-                     */
-
                     expires_at:
                         new Date(
                             Date.now() +
@@ -1980,15 +1698,11 @@ async function postInstant() {
                     is_active:
                         true
 
-                });
-
+                })
+                .select()
+                .single();
 
         if (insertError) {
-
-            /*
-             * If DB insert fails,
-             * remove uploaded image.
-             */
 
             await supabaseClient
                 .storage
@@ -1997,46 +1711,79 @@ async function postInstant() {
                     filePath
                 ]);
 
-
             throw insertError;
-
         }
 
 
         /*
-         * Close preview
+         * Clear preview
          */
 
-        capturedImage.src =
-            "";
-
-        capturedImage.dataset.image =
-            "";
+        capturedImage.src = "";
+        capturedImage.dataset.image = "";
 
         previewModal.classList.remove(
             "show"
         );
 
-
-        document.body.style.overflow =
-            "";
+        document.body.style.overflow = "";
 
 
         /*
-         * Reload Instants
+         * Reload everything.
+         *
+         * IMPORTANT:
+         * The newly created Instant is now
+         * fetched again from Supabase.
          */
 
         await loadInstants();
 
 
         /*
-         * Go to profile
+         * Make sure the new Instant is available
+         * even if Supabase ordering changes.
+         */
+
+        if (insertedInstant?.id) {
+
+            const newIndex =
+                instants.findIndex(
+                    item =>
+                        item.id ===
+                        insertedInstant.id
+                );
+
+            if (newIndex !== -1) {
+
+                currentIndex =
+                    newIndex;
+
+            } else {
+
+                currentIndex = 0;
+
+            }
+
+        } else {
+
+            currentIndex = 0;
+
+        }
+
+
+        renderInstantCards();
+
+        updateMyInstantCount();
+
+
+        /*
+         * Show profile after posting.
          */
 
         showScreen(
             "profileScreen"
         );
-
 
     } catch (error) {
 
@@ -2045,12 +1792,10 @@ async function postInstant() {
             error
         );
 
-
         alert(
             error?.message ||
             "Failed to post Instant. Please try again."
         );
-
 
     } finally {
 
@@ -2066,7 +1811,7 @@ async function postInstant() {
 
 
 /* =====================================================
-   REAL INSTANTS — SUPABASE
+   REAL INSTANTS
 ===================================================== */
 
 let instants = [];
@@ -2075,69 +1820,96 @@ let currentIndex = 0;
 
 
 /* =====================================================
-   LOAD MY INSTANTS + FRIEND INSTANTS
+   LOAD INSTANTS
 ===================================================== */
 
 async function loadInstants() {
 
     if (!currentUser) {
+
         instants = [];
+
+        currentIndex = 0;
+
+        renderInstantCards();
+
+        updateHomeInstantCount();
+
+        updateMyInstantCount();
+
         return;
     }
 
     try {
 
+        /*
+         * IMPORTANT:
+         *
+         * We intentionally load ALL active Instants
+         * available to the authenticated user.
+         *
+         * This includes the current user's own Instants.
+         */
+
         const {
             data,
             error
-        } = await supabaseClient
-            .from("instants")
-            .select(`
-                id,
-                user_id,
-                image_url,
-                caption,
-                created_at,
-                expires_at,
-                is_active
-            `)
-            .eq("is_active", true)
-            .order("created_at", {
-                ascending: true
-            });
+        } =
+            await supabaseClient
+                .from("instants")
+                .select(`
+                    id,
+                    user_id,
+                    image_url,
+                    caption,
+                    created_at,
+                    expires_at,
+                    is_active
+                `)
+                .eq(
+                    "is_active",
+                    true
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending: false
+                    }
+                );
 
         if (error) {
             throw error;
         }
 
-        if (!data) {
-            instants = [];
-            return;
-        }
+        const rows =
+            data || [];
+
+        const now =
+            new Date();
 
 
         /*
-         * Only show active, non-expired Instants.
+         * Remove expired Instants on client side too.
          */
 
-        const now = new Date();
-
         const validInstants =
-            data.filter(instant => {
+            rows.filter(instant => {
 
                 if (!instant.expires_at) {
                     return true;
                 }
 
-                return new Date(
-                    instant.expires_at
-                ) > now;
+                return (
+                    new Date(
+                        instant.expires_at
+                    ) > now
+                );
 
             });
 
 
         /*
-         * Get profiles for the users
+         * Collect all user IDs.
          */
 
         const userIds =
@@ -2170,20 +1942,17 @@ async function loadInstants() {
                         userIds
                     );
 
-
             if (profileError) {
                 throw profileError;
             }
 
-
             profiles =
                 profileData || [];
-
         }
 
 
         /*
-         * Convert profile list into a quick lookup
+         * Profile lookup.
          */
 
         const profileMap =
@@ -2198,11 +1967,7 @@ async function loadInstants() {
 
 
         /*
-         * Create signed URLs
-         *
-         * IMPORTANT:
-         * image_url contains the Storage path,
-         * not a public URL.
+         * Process images.
          */
 
         const processed = [];
@@ -2218,8 +1983,47 @@ async function loadInstants() {
                 );
 
 
-            if (!profile) {
-                continue;
+            /*
+             * If profile isn't returned by RLS,
+             * don't silently break the entire feed.
+             *
+             * Use currentProfile for own Instant.
+             */
+
+            let usableProfile =
+                profile;
+
+
+            if (
+                !usableProfile &&
+                currentUser &&
+                instant.user_id ===
+                currentUser.id
+            ) {
+
+                usableProfile =
+                    currentProfile;
+
+            }
+
+
+            if (!usableProfile) {
+
+                /*
+                 * Keep the Instant visible even if
+                 * profile lookup temporarily fails.
+                 */
+
+                usableProfile = {
+
+                    username:
+                        "user",
+
+                    display_name:
+                        "User"
+
+                };
+
             }
 
 
@@ -2243,9 +2047,22 @@ async function loadInstants() {
                     signedError
                 );
 
-                continue;
+                /*
+                 * Don't remove the DB Instant.
+                 * Just skip broken image.
+                 */
 
+                continue;
             }
+
+
+            const displayName =
+                usableProfile.display_name ||
+                "User";
+
+            const username =
+                usableProfile.username ||
+                "user";
 
 
             processed.push({
@@ -2257,17 +2074,13 @@ async function loadInstants() {
                     instant.user_id,
 
                 name:
-                    profile.display_name ||
-                    "User",
+                    displayName,
 
                 username:
-                    `@${profile.username || "user"}`,
+                    `@${username}`,
 
                 avatar:
-                    (
-                        profile.display_name ||
-                        "U"
-                    )
+                    displayName
                         .charAt(0)
                         .toUpperCase(),
 
@@ -2290,16 +2103,34 @@ async function loadInstants() {
 
                 mine:
                     instant.user_id ===
-                    currentUser.id
+                    currentUser.id,
+
+                createdAt:
+                    instant.created_at
 
             });
 
         }
 
 
+        /*
+         * Always keep newest first.
+         */
+
+        processed.sort(
+            (a, b) =>
+                new Date(b.createdAt) -
+                new Date(a.createdAt)
+        );
+
+
         instants =
             processed;
 
+
+        /*
+         * Start from newest.
+         */
 
         currentIndex = 0;
 
@@ -2310,6 +2141,8 @@ async function loadInstants() {
 
         updateMyInstantCount();
 
+        renderMyInstantsIfAvailable();
+
 
     } catch (error) {
 
@@ -2318,11 +2151,20 @@ async function loadInstants() {
             error
         );
 
-        instants = [];
+        /*
+         * Don't wipe already loaded Instants
+         * unnecessarily.
+         */
+
+        if (!instants.length) {
+            instants = [];
+        }
 
         renderInstantCards();
 
         updateHomeInstantCount();
+
+        updateMyInstantCount();
 
     }
 
@@ -2333,20 +2175,14 @@ async function loadInstants() {
    FORMAT TIME
 ===================================================== */
 
-function formatInstantTime(
-    dateString
-) {
+function formatInstantTime(dateString) {
 
     if (!dateString) {
         return "";
     }
 
-
     const date =
-        new Date(
-            dateString
-        );
-
+        new Date(dateString);
 
     const seconds =
         Math.floor(
@@ -2356,39 +2192,32 @@ function formatInstantTime(
             ) / 1000
         );
 
-
     if (seconds < 60) {
         return "just now";
     }
-
 
     const minutes =
         Math.floor(
             seconds / 60
         );
 
-
     if (minutes < 60) {
         return `${minutes}m ago`;
     }
-
 
     const hours =
         Math.floor(
             minutes / 60
         );
 
-
     if (hours < 24) {
         return `${hours}h ago`;
     }
-
 
     const days =
         Math.floor(
             hours / 24
         );
-
 
     return `${days}d ago`;
 
@@ -2406,11 +2235,9 @@ function updateMyInstantCount() {
             "myInstantCount"
         );
 
-
     if (!element) {
         return;
     }
-
 
     const count =
         instants.filter(
@@ -2418,9 +2245,139 @@ function updateMyInstantCount() {
                 instant.mine
         ).length;
 
-
     element.textContent =
         count;
+
+}
+
+
+/* =====================================================
+   MY INSTANTS RENDER
+   If your HTML contains a container with one of
+   these IDs, the user's own Instants will appear there.
+===================================================== */
+
+function renderMyInstantsIfAvailable() {
+
+    const container =
+        document.getElementById(
+            "myInstants"
+        ) ||
+        document.getElementById(
+            "myInstantArea"
+        ) ||
+        document.getElementById(
+            "myInstantsGrid"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    const mine =
+        instants.filter(
+            instant =>
+                instant.mine
+        );
+
+
+    if (!mine.length) {
+
+        container.innerHTML = `
+            <div class="my-instants-empty">
+                No Instants yet.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        mine.map(instant => {
+
+            return `
+                <article
+                    class="my-instant-item"
+                    data-instant-id="${escapeHTML(instant.id)}"
+                >
+
+                    <div
+                        class="my-instant-image"
+                        style="
+                            background-image:
+                            url('${escapeAttribute(instant.image)}');
+                        "
+                    ></div>
+
+                    <div class="my-instant-meta">
+
+                        <strong>
+                            ${escapeHTML(instant.name)}
+                        </strong>
+
+                        <span>
+                            ${escapeHTML(instant.time)}
+                        </span>
+
+                    </div>
+
+                </article>
+            `;
+
+        }).join("");
+
+}
+
+
+/* =====================================================
+   SAFE HTML HELPERS
+===================================================== */
+
+function escapeHTML(value) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+function escapeAttribute(value) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+        .replace(
+            /'/g,
+            "\\'"
+        );
 
 }
 
@@ -2441,219 +2398,336 @@ const cardArea =
 
 function renderInstantCards() {
 
-    cardArea.innerHTML =
-        "";
+    if (!cardArea) {
+        return;
+    }
 
+    cardArea.innerHTML = "";
 
-    if (
-        instants.length === 0
-    ) {
+    if (!instants.length) {
 
         showFinishedState();
 
-        return;
+        updateProgress();
 
+        return;
     }
 
 
-    const visibleInstants =
+    /*
+     * Only render the current Instant and the
+     * next few cards.
+     *
+     * This prevents dozens of cards from sitting
+     * on top of each other and causing visual overlap.
+     */
+
+    const cardsToRender =
         instants.slice(
-            currentIndex
+            currentIndex,
+            Math.min(
+                currentIndex + 3,
+                instants.length
+            )
         );
 
 
-    for (
-        let i =
-            visibleInstants.length - 1;
+    cardsToRender.forEach(
+        (instant, relativeIndex) => {
 
-        i >= 0;
-
-        i--
-    ) {
-
-        const instant =
-            visibleInstants[i];
+            const actualIndex =
+                currentIndex +
+                relativeIndex;
 
 
-        const actualIndex =
-            currentIndex + i;
+            const card =
+                document.createElement(
+                    "article"
+                );
 
 
-        const card =
-            document.createElement(
-                "article"
+            card.className =
+                "instant-card";
+
+
+            card.dataset.index =
+                actualIndex;
+
+
+            /*
+             * Explicit stack order.
+             *
+             * First card = top card.
+             */
+
+            card.style.zIndex =
+                String(
+                    100 -
+                    relativeIndex
+                );
+
+
+            /*
+             * Slight depth for cards behind.
+             */
+
+            if (relativeIndex === 1) {
+
+                card.style.transform =
+                    "scale(.97) translateY(8px)";
+
+                card.style.opacity =
+                    "0.92";
+
+            } else if (
+                relativeIndex === 2
+            ) {
+
+                card.style.transform =
+                    "scale(.94) translateY(16px)";
+
+                card.style.opacity =
+                    "0.75";
+
+            }
+
+
+            const safeName =
+                escapeHTML(
+                    instant.name
+                );
+
+            const safeUsername =
+                escapeHTML(
+                    instant.username
+                );
+
+            const safeCaption =
+                escapeHTML(
+                    instant.caption
+                );
+
+            const safeAvatar =
+                escapeHTML(
+                    instant.avatar
+                );
+
+
+            let photoHTML = "";
+
+
+            if (instant.image) {
+
+                photoHTML = `
+
+                    <div
+                        class="instant-photo"
+                        style="
+                            background-image:
+                            url('${escapeAttribute(instant.image)}');
+                        "
+                    >
+
+                        <div
+                            class="instant-gradient"
+                        ></div>
+
+                        <div
+                            class="instant-info"
+                        >
+
+                            <div
+                                class="instant-user"
+                            >
+
+                                <div
+                                    class="avatar"
+                                >
+                                    ${safeAvatar}
+                                </div>
+
+                                <div
+                                    class="instant-user-text"
+                                >
+
+                                    <strong>
+                                        ${safeName}
+                                    </strong>
+
+                                    <span>
+                                        ${safeUsername}
+                                        ·
+                                        ${escapeHTML(instant.time)}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                            ${
+                                safeCaption
+                                    ? `
+                                        <p
+                                            class="instant-caption"
+                                        >
+                                            ${safeCaption}
+                                        </p>
+                                    `
+                                    : ""
+                            }
+
+                            <div
+                                class="instant-actions"
+                            >
+
+                                <button
+                                    class="like-button"
+                                    data-index="${actualIndex}"
+                                    type="button"
+                                >
+
+                                    <span>
+                                        ♡
+                                    </span>
+
+                                    <strong>
+                                        ${instant.likes}
+                                    </strong>
+
+                                </button>
+
+                                <span
+                                    class="seen-text"
+                                >
+                                    👀
+                                    ${instant.seen}
+                                    seen
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            } else {
+
+                photoHTML = `
+
+                    <div
+                        class="
+                            instant-photo
+                            ${escapeHTML(
+                                instant.photo || ""
+                            )}
+                        "
+                    >
+
+                        <div
+                            class="photo-placeholder"
+                        >
+                            ✦
+                        </div>
+
+                        <div
+                            class="instant-gradient"
+                        ></div>
+
+                        <div
+                            class="instant-info"
+                        >
+
+                            <div
+                                class="instant-user"
+                            >
+
+                                <div
+                                    class="avatar"
+                                >
+                                    ${safeAvatar}
+                                </div>
+
+                                <div
+                                    class="instant-user-text"
+                                >
+
+                                    <strong>
+                                        ${safeName}
+                                    </strong>
+
+                                    <span>
+                                        ${safeUsername}
+                                        ·
+                                        ${escapeHTML(instant.time)}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                            ${
+                                safeCaption
+                                    ? `
+                                        <p
+                                            class="instant-caption"
+                                        >
+                                            ${safeCaption}
+                                        </p>
+                                    `
+                                    : ""
+                            }
+
+                            <div
+                                class="instant-actions"
+                            >
+
+                                <button
+                                    class="like-button"
+                                    data-index="${actualIndex}"
+                                    type="button"
+                                >
+
+                                    <span>
+                                        ♡
+                                    </span>
+
+                                    <strong>
+                                        ${instant.likes}
+                                    </strong>
+
+                                </button>
+
+                                <span
+                                    class="seen-text"
+                                >
+                                    👀
+                                    ${instant.seen}
+                                    seen
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+
+
+            card.innerHTML =
+                photoHTML;
+
+
+            cardArea.appendChild(
+                card
             );
 
-
-        card.className =
-            "instant-card";
-
-
-        card.dataset.index =
-            actualIndex;
-
-
-        let photoHTML =
-            "";
-
-
-        if (instant.image) {
-
-            photoHTML = `
-
-                <div
-                    class="instant-photo"
-                    style="
-                        background-image:
-                        url('${instant.image}');
-                    "
-                >
-
-                    <div class="instant-gradient"></div>
-
-                    <div class="instant-info">
-
-                        <div class="instant-user">
-
-                            <div class="avatar">
-                                ${instant.avatar}
-                            </div>
-
-                            <div>
-
-                                <strong>
-                                    ${instant.name}
-                                </strong>
-
-                                <span>
-                                    ${instant.username}
-                                    ·
-                                    ${instant.time}
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                        <p class="instant-caption">
-                            ${instant.caption}
-                        </p>
-
-                        <div class="instant-actions">
-
-                            <button
-                                class="like-button"
-                                data-index="${actualIndex}"
-                            >
-
-                                <span>
-                                    ♡
-                                </span>
-
-                                <strong>
-                                    ${instant.likes}
-                                </strong>
-
-                            </button>
-
-                            <span class="seen-text">
-                                👀 ${instant.seen} seen
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            `;
-
-        } else {
-
-            photoHTML = `
-
-                <div
-                    class="
-                        instant-photo
-                        ${instant.photo}
-                    "
-                >
-
-                    <div class="photo-placeholder">
-                        ✦
-                    </div>
-
-                    <div class="instant-gradient"></div>
-
-                    <div class="instant-info">
-
-                        <div class="instant-user">
-
-                            <div class="avatar">
-                                ${instant.avatar}
-                            </div>
-
-                            <div>
-
-                                <strong>
-                                    ${instant.name}
-                                </strong>
-
-                                <span>
-                                    ${instant.username}
-                                    ·
-                                    ${instant.time}
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                        <p class="instant-caption">
-                            ${instant.caption}
-                        </p>
-
-                        <div class="instant-actions">
-
-                            <button
-                                class="like-button"
-                                data-index="${actualIndex}"
-                            >
-
-                                <span>
-                                    ♡
-                                </span>
-
-                                <strong>
-                                    ${instant.likes}
-                                </strong>
-
-                            </button>
-
-                            <span class="seen-text">
-                                👀 ${instant.seen} seen
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            `;
-
         }
-
-
-        card.innerHTML =
-            photoHTML;
-
-
-        cardArea.appendChild(
-            card
-        );
-
-    }
+    );
 
 
     setupCardInteractions();
@@ -2667,6 +2741,7 @@ function renderInstantCards() {
 
 /* =====================================================
    CARD INTERACTIONS
+   IMPORTANT SCROLL FIX
 ===================================================== */
 
 function setupCardInteractions() {
@@ -2677,231 +2752,351 @@ function setupCardInteractions() {
         );
 
 
-    cards.forEach(
-        card => {
+    cards.forEach(card => {
 
-            let startX = 0;
+        /*
+         * Only the first/current card is swipeable.
+         */
 
-            let currentX = 0;
-
-            let dragging = false;
-
-
-            card.addEventListener(
-                "pointerdown",
-                event => {
-
-                    const topCard =
-                        document.querySelector(
-                            ".instant-card"
-                        );
-
-
-                    if (
-                        card !== topCard
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    dragging = true;
-
-                    startX =
-                        event.clientX;
-
-
-                    card.style.transition =
-                        "none";
-
-
-                    card.setPointerCapture(
-                        event.pointerId
-                    );
-
-                }
+        const cardIndex =
+            Number(
+                card.dataset.index
             );
 
-
-            card.addEventListener(
-                "pointermove",
-                event => {
-
-                    if (!dragging) {
-
-                        return;
-
-                    }
+        const isTopCard =
+            cardIndex ===
+            currentIndex;
 
 
-                    currentX =
-                        event.clientX -
-                        startX;
+        if (!isTopCard) {
+
+            card.style.pointerEvents =
+                "none";
+
+            return;
+
+        }
 
 
-                    if (
-                        currentX < 0
-                    ) {
+        /*
+         * Allow normal vertical scrolling.
+         *
+         * We do NOT use:
+         * setPointerCapture()
+         * immediately on pointerdown.
+         */
 
-                        currentX = 0;
-
-                    }
-
-
-                    const rotation =
-                        Math.min(
-                            currentX / 12,
-                            12
-                        );
+        card.style.touchAction =
+            "pan-y";
 
 
-                    card.style.transform =
-                        `
-                        translateX(${currentX}px)
-                        rotate(${rotation}deg)
-                        `;
+        let startX = 0;
+        let startY = 0;
+
+        let currentX = 0;
+
+        let dragging = false;
+
+        let horizontalSwipe =
+            false;
+
+
+        card.addEventListener(
+            "pointerdown",
+            event => {
+
+                /*
+                 * Ignore buttons.
+                 */
+
+                if (
+                    event.target.closest(
+                        "button"
+                    )
+                ) {
+
+                    return;
 
                 }
-            );
 
 
-            card.addEventListener(
-                "pointerup",
-                () => {
+                startX =
+                    event.clientX;
 
-                    if (!dragging) {
+                startY =
+                    event.clientY;
 
-                        return;
+                currentX = 0;
 
-                    }
+                dragging = true;
 
+                horizontalSwipe =
+                    false;
+
+            }
+        );
+
+
+        card.addEventListener(
+            "pointermove",
+            event => {
+
+                if (!dragging) {
+                    return;
+                }
+
+
+                const deltaX =
+                    event.clientX -
+                    startX;
+
+                const deltaY =
+                    event.clientY -
+                    startY;
+
+
+                /*
+                 * Don't interfere with vertical scrolling.
+                 *
+                 * Once movement is clearly vertical,
+                 * completely abandon swipe.
+                 */
+
+                if (
+                    !horizontalSwipe &&
+                    Math.abs(deltaY) >
+                    Math.abs(deltaX) &&
+                    Math.abs(deltaY) > 8
+                ) {
 
                     dragging = false;
 
+                    return;
 
-                    card.style.transition =
-                        "";
+                }
 
 
-                    if (
-                        currentX > 120
-                    ) {
+                /*
+                 * Start horizontal swipe only after
+                 * a clear horizontal movement.
+                 */
 
-                        swipeCard(
-                            card
+                if (
+                    !horizontalSwipe &&
+                    Math.abs(deltaX) > 10 &&
+                    Math.abs(deltaX) >
+                    Math.abs(deltaY)
+                ) {
+
+                    horizontalSwipe = true;
+
+                    /*
+                     * Capture only AFTER we know
+                     * the user wants a horizontal swipe.
+                     */
+
+                    try {
+
+                        card.setPointerCapture(
+                            event.pointerId
                         );
 
-                    } else {
-
-                        card.classList.add(
-                            "return-card"
-                        );
-
-
-                        setTimeout(
-                            () => {
-
-                                card.classList.remove(
-                                    "return-card"
-                                );
-
-                                card.style.transform =
-                                    "";
-
-                            },
-                            350
-                        );
-
+                    } catch (error) {
+                        // Ignore capture errors.
                     }
 
+                }
+
+
+                if (!horizontalSwipe) {
+                    return;
+                }
+
+
+                currentX =
+                    Math.max(
+                        0,
+                        deltaX
+                    );
+
+
+                const rotation =
+                    Math.min(
+                        currentX / 12,
+                        12
+                    );
+
+
+                card.style.transition =
+                    "none";
+
+
+                card.style.transform =
+                    `
+                    translateX(${currentX}px)
+                    rotate(${rotation}deg)
+                    `;
+
+            }
+        );
+
+
+        card.addEventListener(
+            "pointerup",
+            event => {
+
+                if (!dragging) {
+                    return;
+                }
+
+                dragging = false;
+
+
+                if (!horizontalSwipe) {
 
                     currentX = 0;
 
-                }
-            );
-
-
-            card.addEventListener(
-                "pointercancel",
-                () => {
-
-                    dragging = false;
-
-                    card.style.transform =
-                        "";
+                    return;
 
                 }
-            );
 
-        }
-    );
 
+                try {
+
+                    card.releasePointerCapture(
+                        event.pointerId
+                    );
+
+                } catch (error) {
+                    // Ignore.
+                }
+
+
+                card.style.transition =
+                    "";
+
+
+                if (currentX > 120) {
+
+                    swipeCard(card);
+
+                } else {
+
+                    card.classList.add(
+                        "return-card"
+                    );
+
+                    setTimeout(
+                        () => {
+
+                            card.classList.remove(
+                                "return-card"
+                            );
+
+                            card.style.transform =
+                                "";
+
+                        },
+                        350
+                    );
+
+                }
+
+
+                currentX = 0;
+
+            }
+        );
+
+
+        card.addEventListener(
+            "pointercancel",
+            () => {
+
+                dragging = false;
+
+                horizontalSwipe =
+                    false;
+
+                currentX = 0;
+
+                card.style.transform =
+                    "";
+
+            }
+        );
+
+    });
+
+
+    /*
+     * LIKE BUTTONS
+     */
 
     document
         .querySelectorAll(
             ".like-button"
         )
-        .forEach(
-            button => {
+        .forEach(button => {
 
-                button.addEventListener(
-                    "click",
-                    event => {
+            button.addEventListener(
+                "click",
+                event => {
 
-                        event.stopPropagation();
+                    event.stopPropagation();
 
-
-                        const index =
-                            Number(
-                                button.dataset.index
-                            );
-
-
-                        if (
-                            !instants[index]
-                        ) {
-
-                            return;
-
-                        }
-
-
-                        if (
-                            button.classList.contains(
-                                "liked"
-                            )
-                        ) {
-
-                            return;
-
-                        }
-
-
-                        instants[index].likes++;
-
-
-                        button.classList.add(
-                            "liked"
+                    const index =
+                        Number(
+                            button.dataset.index
                         );
 
+                    if (
+                        !instants[index]
+                    ) {
 
-                        button.querySelector(
-                            "span"
-                        ).textContent =
-                            "♥";
-
-
-                        button.querySelector(
-                            "strong"
-                        ).textContent =
-                            instants[index].likes;
+                        return;
 
                     }
-                );
 
-            }
-        );
+                    if (
+                        button.classList.contains(
+                            "liked"
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+                    instants[index].likes++;
+
+                    button.classList.add(
+                        "liked"
+                    );
+
+                    const icon =
+                        button.querySelector(
+                            "span"
+                        );
+
+                    const count =
+                        button.querySelector(
+                            "strong"
+                        );
+
+                    if (icon) {
+                        icon.textContent = "♥";
+                    }
+
+                    if (count) {
+                        count.textContent =
+                            instants[index].likes;
+                    }
+
+                }
+            );
+
+        });
 
 }
 
@@ -2912,9 +3107,14 @@ function setupCardInteractions() {
 
 function swipeCard(card) {
 
-    card.classList.add(
-        "swipe-right"
-    );
+    card.style.transition =
+        "transform .35s ease, opacity .35s ease";
+
+    card.style.transform =
+        "translateX(120%) rotate(12deg)";
+
+    card.style.opacity =
+        "0";
 
 
     setTimeout(
@@ -2930,7 +3130,6 @@ function swipeCard(card) {
 
                 currentIndex =
                     instants.length;
-
 
                 showFinishedState();
 
@@ -2971,19 +3170,22 @@ function updateProgress() {
         instants.length;
 
 
-    totalInstants.textContent =
-        total;
+    if (totalInstants) {
+
+        totalInstants.textContent =
+            total;
+
+    }
 
 
-    if (
-        total === 0
-    ) {
+    if (!total) {
 
-        currentInstant.textContent =
-            "0";
+        if (currentInstant) {
+            currentInstant.textContent =
+                "0";
+        }
 
         return;
-
     }
 
 
@@ -2994,8 +3196,12 @@ function updateProgress() {
         );
 
 
-    currentInstant.textContent =
-        number;
+    if (currentInstant) {
+
+        currentInstant.textContent =
+            number;
+
+    }
 
 }
 
@@ -3011,18 +3217,30 @@ function markCurrentInstantSeen() {
     ) {
 
         return;
-
     }
-
 
     if (
         instants[currentIndex].mine
     ) {
 
         return;
+    }
+
+    /*
+     * Don't repeatedly increase the same
+     * seen count every time render runs.
+     */
+
+    if (
+        instants[currentIndex]._seenMarked
+    ) {
+
+        return;
 
     }
 
+    instants[currentIndex]._seenMarked =
+        true;
 
     instants[currentIndex].seen++;
 
@@ -3034,6 +3252,10 @@ function markCurrentInstantSeen() {
 ===================================================== */
 
 function showFinishedState() {
+
+    if (!cardArea) {
+        return;
+    }
 
     cardArea.innerHTML = `
 
@@ -3074,6 +3296,7 @@ function showFinishedState() {
 
             <button
                 id="resetInstants"
+                type="button"
                 style="
                     margin-top:20px;
                     height:40px;
@@ -3135,36 +3358,44 @@ const instantCount =
     );
 
 
-openInstants.addEventListener(
-    "click",
-    () => {
+if (openInstants) {
 
-        currentIndex = 0;
+    openInstants.addEventListener(
+        "click",
+        () => {
 
-        renderInstantCards();
+            currentIndex = 0;
 
-        showScreen(
-            "instantsScreen"
-        );
+            renderInstantCards();
 
-    }
-);
+            showScreen(
+                "instantsScreen"
+            );
+
+        }
+    );
+
+}
 
 
-instantCount.addEventListener(
-    "click",
-    () => {
+if (instantCount) {
 
-        currentIndex = 0;
+    instantCount.addEventListener(
+        "click",
+        () => {
 
-        renderInstantCards();
+            currentIndex = 0;
 
-        showScreen(
-            "instantsScreen"
-        );
+            renderInstantCards();
 
-    }
-);
+            showScreen(
+                "instantsScreen"
+            );
+
+        }
+    );
+
+}
 
 
 /* =====================================================
@@ -3179,8 +3410,15 @@ const instantCountTitle =
 
 function updateHomeInstantCount() {
 
+    if (!instantCountTitle) {
+        return;
+    }
+
+    const count =
+        instants.length;
+
     instantCountTitle.textContent =
-        `${instants.length} new Instants`;
+        `${count} new Instant${count === 1 ? "" : "s"}`;
 
 }
 
@@ -3195,16 +3433,20 @@ const requestsButton =
     );
 
 
-requestsButton.addEventListener(
-    "click",
-    () => {
+if (requestsButton) {
 
-        showScreen(
-            "requestsScreen"
-        );
+    requestsButton.addEventListener(
+        "click",
+        () => {
 
-    }
-);
+            showScreen(
+                "requestsScreen"
+            );
+
+        }
+    );
+
+}
 
 
 /* =====================================================
@@ -3217,40 +3459,39 @@ const friendSearch =
     );
 
 
-friendSearch.addEventListener(
-    "input",
-    () => {
+if (friendSearch) {
 
-        const query =
-            friendSearch.value
-                .toLowerCase()
-                .trim();
+    friendSearch.addEventListener(
+        "input",
+        () => {
 
+            const query =
+                friendSearch.value
+                    .toLowerCase()
+                    .trim();
 
-        const people =
-            document.querySelectorAll(
-                ".person-row"
-            );
+            const people =
+                document.querySelectorAll(
+                    ".person-row"
+                );
 
-
-        people.forEach(
-            person => {
+            people.forEach(person => {
 
                 const text =
                     person.textContent
                         .toLowerCase();
-
 
                 person.style.display =
                     text.includes(query)
                         ? "flex"
                         : "none";
 
-            }
-        );
+            });
 
-    }
-);
+        }
+    );
+
+}
 
 
 /* =====================================================
@@ -3261,47 +3502,42 @@ document
     .querySelectorAll(
         ".friend-tab"
     )
-    .forEach(
-        tab => {
+    .forEach(tab => {
 
-            tab.addEventListener(
-                "click",
-                () => {
+        tab.addEventListener(
+            "click",
+            () => {
 
-                    document
-                        .querySelectorAll(
-                            ".friend-tab"
-                        )
-                        .forEach(
-                            item =>
-                                item.classList
-                                    .remove(
-                                        "active"
-                                    )
-                        );
-
-
-                    tab.classList.add(
-                        "active"
+                document
+                    .querySelectorAll(
+                        ".friend-tab"
+                    )
+                    .forEach(item =>
+                        item.classList
+                            .remove(
+                                "active"
+                            )
                     );
 
+                tab.classList.add(
+                    "active"
+                );
 
-                    if (
-                        tab.dataset.tab ===
-                        "requests"
-                    ) {
+                if (
+                    tab.dataset.tab ===
+                    "requests"
+                ) {
 
-                        showScreen(
-                            "requestsScreen"
-                        );
-
-                    }
+                    showScreen(
+                        "requestsScreen"
+                    );
 
                 }
-            );
 
-        }
-    );
+            }
+        );
+
+    });
 
 
 /* =====================================================
@@ -3318,11 +3554,11 @@ document.addEventListener(
         ) {
 
             return;
-
         }
 
 
         if (
+            previewModal &&
             previewModal.classList.contains(
                 "show"
             )
@@ -3331,11 +3567,11 @@ document.addEventListener(
             discardPhoto();
 
             return;
-
         }
 
 
         if (
+            captureModal &&
             captureModal.classList.contains(
                 "show"
             )
@@ -3357,13 +3593,42 @@ document.addEventListener(
     "visibilitychange",
     () => {
 
+        if (document.hidden) {
+            stopCamera();
+        }
+
+    }
+);
+
+
+/* =====================================================
+   REFRESH INSTANTS WHEN RETURNING TO APP
+===================================================== */
+
+window.addEventListener(
+    "focus",
+    () => {
+
+        if (!currentUser) {
+            return;
+        }
+
+        /*
+         * Don't refresh while camera is open.
+         */
+
         if (
-            document.hidden
+            captureModal &&
+            captureModal.classList.contains(
+                "show"
+            )
         ) {
 
-            stopCamera();
+            return;
 
         }
+
+        loadInstants();
 
     }
 );
@@ -3373,9 +3638,6 @@ document.addEventListener(
    INITIALIZE
 ===================================================== */
 
-setAuthMode(
-    "login"
-);
-
+setAuthMode("login");
 
 initializeAuth();
