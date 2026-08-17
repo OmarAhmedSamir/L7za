@@ -2411,6 +2411,80 @@ async function openCamera() {
 
 
 /* =====================================================
+   CAMERA STATE HELPERS
+===================================================== */
+
+/*
+ * Available physical cameras.
+ */
+let availableCameras = [];
+
+/*
+ * Currently selected physical camera.
+ */
+let selectedCameraDeviceId = null;
+
+/*
+ * Current camera direction.
+ */
+let cameraFacingMode = "user";
+
+/*
+ * Prevent multiple camera operations at once.
+ */
+let cameraSwitching = false;
+
+/*
+ * Current selected filter.
+ */
+let currentCameraFilter = "original";
+
+
+/* =====================================================
+   CAMERA FILTERS
+===================================================== */
+
+const CAMERA_FILTERS = {
+
+    original: {
+        name: "Original",
+        css: "none"
+    },
+
+    soft: {
+        name: "Soft",
+        css:
+            "brightness(1.04) contrast(.96) saturate(.92)"
+    },
+
+    warm: {
+        name: "Warm",
+        css:
+            "brightness(1.04) contrast(1.02) saturate(1.08) sepia(.10)"
+    },
+
+    cool: {
+        name: "Cool",
+        css:
+            "brightness(1.02) contrast(1.02) saturate(.94) hue-rotate(8deg)"
+    },
+
+    vivid: {
+        name: "Vivid",
+        css:
+            "brightness(1.03) contrast(1.10) saturate(1.22)"
+    },
+
+    mono: {
+        name: "Mono",
+        css:
+            "grayscale(1) contrast(1.06)"
+    }
+
+};
+
+
+/* =====================================================
    START CAMERA
 ===================================================== */
 
@@ -2418,110 +2492,136 @@ async function startCamera(
     preferredDeviceId = selectedCameraDeviceId
 ) {
 
-    stopCamera();
-
-    cameraError.classList.remove(
-        "show"
-    );
-
-    if (
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia
-    ) {
-
-        throw new Error(
-            "Camera API is not supported in this browser."
-        );
-
+    if (cameraSwitching) {
+        return;
     }
 
-    /*
-     * First try the exact camera device if we have one.
-     */
-    let videoConstraints = {};
-
-    if (preferredDeviceId) {
-
-        videoConstraints = {
-
-            deviceId: {
-                exact:
-                    preferredDeviceId
-            },
-
-            width: {
-                ideal: 3840
-            },
-
-            height: {
-                ideal: 2160
-            },
-
-            frameRate: {
-                ideal: 30,
-                max: 60
-            }
-
-        };
-
-    } else {
-
-        videoConstraints = {
-
-            facingMode: {
-                ideal:
-                    cameraFacingMode
-            },
-
-            width: {
-                ideal: 3840
-            },
-
-            height: {
-                ideal: 2160
-            },
-
-            frameRate: {
-                ideal: 30,
-                max: 60
-            }
-
-        };
-
-    }
+    cameraSwitching = true;
 
     try {
 
-        cameraStream =
-            await navigator.mediaDevices
-                .getUserMedia({
+        stopCamera();
 
-                    audio: false,
-
-                    video:
-                        videoConstraints
-
-                });
-
-    } catch (error) {
-
-        /*
-         * Some devices don't support 4K.
-         * Retry with a safer high-quality configuration.
-         */
-
-        console.warn(
-            "High quality camera failed. Retrying...",
-            error
+        cameraError.classList.remove(
+            "show"
         );
 
-        const fallbackConstraints =
-            preferredDeviceId
-                ? {
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
 
-                    audio: false,
+            throw new Error(
+                "Camera API is not supported in this browser."
+            );
 
-                    video: {
+        }
+
+
+        /* =================================================
+           CAMERA CONSTRAINTS
+        ================================================= */
+
+        let videoConstraints;
+
+
+        /*
+         * If a specific physical camera was selected,
+         * use that camera directly.
+         */
+        if (preferredDeviceId) {
+
+            videoConstraints = {
+
+                deviceId: {
+                    exact:
+                        preferredDeviceId
+                },
+
+                width: {
+                    ideal: 3840
+                },
+
+                height: {
+                    ideal: 2160
+                },
+
+                aspectRatio: {
+                    ideal: 16 / 9
+                },
+
+                frameRate: {
+                    ideal: 30,
+                    max: 60
+                }
+
+            };
+
+        } else {
+
+            /*
+             * Otherwise use the requested direction.
+             */
+            videoConstraints = {
+
+                facingMode: {
+                    ideal:
+                        cameraFacingMode
+                },
+
+                width: {
+                    ideal: 3840
+                },
+
+                height: {
+                    ideal: 2160
+                },
+
+                aspectRatio: {
+                    ideal: 16 / 9
+                },
+
+                frameRate: {
+                    ideal: 30,
+                    max: 60
+                }
+
+            };
+
+        }
+
+
+        /* =================================================
+           TRY HIGH QUALITY CAMERA
+        ================================================= */
+
+        try {
+
+            cameraStream =
+                await navigator.mediaDevices
+                    .getUserMedia({
+
+                        audio: false,
+
+                        video:
+                            videoConstraints
+
+                    });
+
+        } catch (highQualityError) {
+
+            console.warn(
+                "High quality camera failed. Retrying with 1080p.",
+                highQualityError
+            );
+
+
+            /*
+             * 1080p fallback.
+             */
+            const fallbackVideoConstraints =
+                preferredDeviceId
+                    ? {
 
                         deviceId: {
                             exact:
@@ -2536,18 +2636,16 @@ async function startCamera(
                             ideal: 1080
                         },
 
+                        aspectRatio: {
+                            ideal: 16 / 9
+                        },
+
                         frameRate: {
                             ideal: 30
                         }
 
                     }
-
-                }
-                : {
-
-                    audio: false,
-
-                    video: {
+                    : {
 
                         facingMode: {
                             ideal:
@@ -2562,55 +2660,247 @@ async function startCamera(
                             ideal: 1080
                         },
 
+                        aspectRatio: {
+                            ideal: 16 / 9
+                        },
+
                         frameRate: {
                             ideal: 30
                         }
 
-                    }
+                    };
 
-                };
 
-        cameraStream =
-            await navigator.mediaDevices
-                .getUserMedia(
-                    fallbackConstraints
-                );
+            cameraStream =
+                await navigator.mediaDevices
+                    .getUserMedia({
+
+                        audio: false,
+
+                        video:
+                            fallbackVideoConstraints
+
+                    });
+
+        }
+
+
+        /* =================================================
+           CONNECT VIDEO
+        ================================================= */
+
+        cameraVideo.srcObject =
+            cameraStream;
+
+        cameraVideo.muted =
+            true;
+
+        cameraVideo.playsInline =
+            true;
+
+        cameraVideo.autoplay =
+            true;
+
+
+        /*
+         * Apply currently selected filter.
+         */
+        applyCameraFilter();
+
+
+        await cameraVideo.play();
+
+
+        /* =================================================
+           GET ACTUAL CAMERA SETTINGS
+        ================================================= */
+
+        const track =
+            cameraStream
+                .getVideoTracks()[0];
+
+
+        if (track) {
+
+            const settings =
+                track.getSettings
+                    ? track.getSettings()
+                    : {};
+
+
+            /*
+             * Save actual device ID.
+             */
+            if (settings.deviceId) {
+
+                selectedCameraDeviceId =
+                    settings.deviceId;
+
+            }
+
+
+            /*
+             * Save actual facing mode
+             * when browser provides it.
+             */
+            if (settings.facingMode) {
+
+                cameraFacingMode =
+                    settings.facingMode;
+
+            }
+
+
+            /*
+             * Apply advanced camera capabilities
+             * when supported.
+             */
+            await applyCameraCapabilities(
+                track
+            );
+
+        }
+
+
+        /* =================================================
+           REFRESH CAMERA LIST
+        ================================================= */
+
+        await loadAvailableCameras();
+
+
+        /*
+         * Update UI after camera is ready.
+         */
+        updateCameraLensUI();
+
+
+    } finally {
+
+        cameraSwitching = false;
 
     }
-
-    cameraVideo.srcObject =
-        cameraStream;
-
-    /*
-     * Apply the selected filter to the live preview.
-     */
-    applyCameraFilter();
-
-    await cameraVideo.play();
-
-    /*
-     * Save the actual device being used.
-     */
-    const track =
-        cameraStream.getVideoTracks()[0];
-
-    const settings =
-        track?.getSettings?.();
-
-    if (settings?.deviceId) {
-
-        selectedCameraDeviceId =
-            settings.deviceId;
-
-    }
-
-    /*
-     * Refresh available cameras after permission
-     * has been granted.
-     */
-    await loadAvailableCameras();
 
 }
+
+
+/* =====================================================
+   APPLY CAMERA CAPABILITIES
+===================================================== */
+
+async function applyCameraCapabilities(
+    track
+) {
+
+    if (
+        !track ||
+        !track.getCapabilities ||
+        !track.applyConstraints
+    ) {
+
+        return;
+
+    }
+
+    try {
+
+        const capabilities =
+            track.getCapabilities();
+
+
+        const advanced = [];
+
+
+        /*
+         * Continuous autofocus.
+         */
+        if (
+            Array.isArray(
+                capabilities.focusMode
+            ) &&
+            capabilities.focusMode.includes(
+                "continuous"
+            )
+        ) {
+
+            advanced.push({
+
+                focusMode:
+                    "continuous"
+
+            });
+
+        }
+
+
+        /*
+         * Continuous exposure.
+         */
+        if (
+            Array.isArray(
+                capabilities.exposureMode
+            ) &&
+            capabilities.exposureMode.includes(
+                "continuous"
+            )
+        ) {
+
+            advanced.push({
+
+                exposureMode:
+                    "continuous"
+
+            });
+
+        }
+
+
+        /*
+         * Prefer maximum optical/digital zoom
+         * only if the camera exposes zoom.
+         *
+         * We intentionally don't force maximum zoom.
+         */
+        if (
+            capabilities.zoom &&
+            typeof capabilities.zoom ===
+                "object"
+        ) {
+
+            /*
+             * Keep the camera at its natural
+             * starting zoom.
+             */
+        }
+
+
+        if (advanced.length) {
+
+            await track.applyConstraints({
+
+                advanced
+
+            });
+
+        }
+
+    } catch (error) {
+
+        /*
+         * Some browsers expose capabilities but
+         * reject certain constraints.
+         *
+         * This should never break the camera.
+         */
+        console.debug(
+            "Optional camera capabilities unavailable:",
+            error
+        );
+
+    }
+
+}
+
 
 /* =====================================================
    LOAD AVAILABLE CAMERAS
@@ -2625,15 +2915,19 @@ async function loadAvailableCameras() {
 
         availableCameras = [];
 
+        updateCameraLensUI();
+
         return [];
 
     }
+
 
     try {
 
         const devices =
             await navigator.mediaDevices
                 .enumerateDevices();
+
 
         availableCameras =
             devices.filter(
@@ -2642,9 +2936,35 @@ async function loadAvailableCameras() {
                     "videoinput"
             );
 
+
+        /*
+         * If the currently selected device
+         * disappeared, reset it.
+         */
+        const selectedStillExists =
+            availableCameras.some(
+                camera =>
+                    camera.deviceId ===
+                    selectedCameraDeviceId
+            );
+
+
+        if (
+            selectedCameraDeviceId &&
+            !selectedStillExists
+        ) {
+
+            selectedCameraDeviceId =
+                null;
+
+        }
+
+
         updateCameraLensUI();
 
+
         return availableCameras;
+
 
     } catch (error) {
 
@@ -2653,9 +2973,12 @@ async function loadAvailableCameras() {
             error
         );
 
+
         availableCameras = [];
 
+
         updateCameraLensUI();
+
 
         return [];
 
@@ -2679,15 +3002,21 @@ function getCameraLabel(
             ""
         ).toLowerCase();
 
+
+    /*
+     * Detect common camera names.
+     */
     if (
         label.includes("ultra") ||
         label.includes("0.5") ||
-        label.includes("wide")
+        label.includes("ultrawide") ||
+        label.includes("ultra-wide")
     ) {
 
         return "Ultra Wide";
 
     }
+
 
     if (
         label.includes("tele") ||
@@ -2698,49 +3027,99 @@ function getCameraLabel(
 
     }
 
+
     if (
         label.includes("front") ||
-        label.includes("user")
+        label.includes("user") ||
+        label.includes("facetime")
     ) {
 
         return "Front";
 
     }
 
+
     if (
         label.includes("back") ||
-        label.includes("rear")
+        label.includes("rear") ||
+        label.includes("environment")
     ) {
 
         return "Back";
 
     }
 
+
     return `Camera ${index + 1}`;
 
 }
 
 
-//* =====================================================
+/* =====================================================
+   CAMERA LENS ICON
+===================================================== */
+
+function getCameraLensIcon(
+    label,
+    index
+) {
+
+    if (
+        label === "Ultra Wide"
+    ) {
+
+        return "0.5×";
+
+    }
+
+
+    if (
+        label === "Telephoto"
+    ) {
+
+        return "2×";
+
+    }
+
+
+    if (
+        label === "Front"
+    ) {
+
+        return "Front";
+
+    }
+
+
+    if (
+        label === "Back"
+    ) {
+
+        return "1×";
+
+    }
+
+
+    return `${index + 1}`;
+
+}
+
+
+/* =====================================================
    UPDATE CAMERA LENS UI
 ===================================================== */
 
 function updateCameraLensUI() {
-
-    /*
-     * Try to find an existing lens selector.
-     * If it doesn't exist in the HTML, we create it
-     * dynamically so the camera system still works.
-     */
 
     let container =
         document.getElementById(
             "cameraLensSelector"
         );
 
+
     /*
-     * No camera selector needed if there is only
-     * one available camera.
+     * If the browser only exposes one camera,
+     * there is no need for the lens selector.
      */
     if (
         availableCameras.length <= 1
@@ -2762,7 +3141,7 @@ function updateCameraLensUI() {
 
 
     /* =================================================
-       CREATE CONTAINER IF NEEDED
+       CREATE SELECTOR
     ================================================= */
 
     if (!container) {
@@ -2772,22 +3151,22 @@ function updateCameraLensUI() {
                 "div"
             );
 
+
         container.id =
             "cameraLensSelector";
+
 
         container.className =
             "camera-lens-selector";
 
 
-        /*
-         * Put the selector inside the camera modal.
-         */
         if (captureModal) {
 
             const cameraContent =
                 captureModal.querySelector(
                     ".camera-modal-content"
                 );
+
 
             if (cameraContent) {
 
@@ -2814,92 +3193,93 @@ function updateCameraLensUI() {
 
 
     /* =================================================
-       BUILD CAMERA BUTTONS
+       BUILD LENS BUTTONS
     ================================================= */
 
     container.innerHTML = `
 
         <div class="camera-lens-title">
-            Lens
+            Camera
         </div>
 
         <div class="camera-lens-options">
-            ${availableCameras
-                .map(
-                    (
-                        camera,
-                        index
-                    ) => {
 
-                        const label =
-                            getCameraLabel(
-                                camera,
-                                index
-                            );
+            ${
+                availableCameras
+                    .map(
+                        (
+                            camera,
+                            index
+                        ) => {
 
-                        const active =
-                            camera.deviceId ===
-                            selectedCameraDeviceId;
+                            const label =
+                                getCameraLabel(
+                                    camera,
+                                    index
+                                );
 
-                        return `
 
-                            <button
-                                type="button"
-                                class="
-                                    camera-lens-button
-                                    ${
-                                        active
-                                            ? "active"
-                                            : ""
-                                    }
-                                "
-                                data-camera-device-id="${escapeAttribute(
-                                    camera.deviceId
-                                )}"
-                            >
+                            const icon =
+                                getCameraLensIcon(
+                                    label,
+                                    index
+                                );
 
-                                <span
-                                    class="camera-lens-icon"
+
+                            const active =
+                                camera.deviceId ===
+                                selectedCameraDeviceId;
+
+
+                            return `
+
+                                <button
+                                    type="button"
+                                    class="
+                                        camera-lens-button
+                                        ${
+                                            active
+                                                ? "active"
+                                                : ""
+                                        }
+                                    "
+                                    data-camera-device-id="${escapeAttribute(
+                                        camera.deviceId
+                                    )}"
                                 >
-                                    ${
-                                        label ===
-                                        "Ultra Wide"
-                                            ? "0.5×"
-                                            : label ===
-                                              "Telephoto"
-                                                ? "2×"
-                                                : label ===
-                                                  "Front"
-                                                    ? "Front"
-                                                    : label ===
-                                                      "Back"
-                                                        ? "1×"
-                                                        : "Lens"
-                                    }
-                                </span>
 
-                                <span
-                                    class="camera-lens-name"
-                                >
-                                    ${escapeHTML(
-                                        label
-                                    )}
-                                </span>
+                                    <span
+                                        class="camera-lens-icon"
+                                    >
+                                        ${escapeHTML(
+                                            icon
+                                        )}
+                                    </span>
 
-                            </button>
+                                    <span
+                                        class="camera-lens-name"
+                                    >
+                                        ${escapeHTML(
+                                            label
+                                        )}
+                                    </span>
 
-                        `;
+                                </button>
 
-                    }
-                )
-                .join("")}
+                            `;
+
+                        }
+                    )
+                    .join("")
+            }
+
         </div>
 
     `;
 
 
     /* =================================================
-       CAMERA BUTTON EVENTS
+       LENS BUTTON EVENTS
     ================================================= */
 
     container
@@ -2917,6 +3297,7 @@ function updateCameraLensUI() {
                             button.dataset
                                 .cameraDeviceId;
 
+
                         if (
                             !deviceId ||
                             deviceId ===
@@ -2928,14 +3309,18 @@ function updateCameraLensUI() {
                         }
 
 
+                        if (
+                            cameraSwitching
+                        ) {
+
+                            return;
+
+                        }
+
+
                         const previousDevice =
                             selectedCameraDeviceId;
 
-
-                        /*
-                         * Disable all buttons while
-                         * switching cameras.
-                         */
 
                         container
                             .querySelectorAll(
@@ -2957,21 +3342,10 @@ function updateCameraLensUI() {
                                 deviceId;
 
 
-                            /*
-                             * Start the exact
-                             * selected camera.
-                             */
-
                             await startCamera(
                                 deviceId
                             );
 
-
-                            /*
-                             * Refresh the UI so
-                             * the active button
-                             * is correct.
-                             */
 
                             updateCameraLensUI();
 
@@ -2984,21 +3358,25 @@ function updateCameraLensUI() {
                             );
 
 
-                            /*
-                             * Restore previous
-                             * camera if switching
-                             * failed.
-                             */
-
                             selectedCameraDeviceId =
                                 previousDevice;
 
 
                             try {
 
-                                await startCamera(
+                                if (
                                     previousDevice
-                                );
+                                ) {
+
+                                    await startCamera(
+                                        previousDevice
+                                    );
+
+                                } else {
+
+                                    await startCamera();
+
+                                }
 
                             } catch (
                                 restoreError
@@ -3009,11 +3387,13 @@ function updateCameraLensUI() {
                                     restoreError
                                 );
 
+
                                 showCameraError(
                                     restoreError
                                 );
 
                             }
+
 
                             updateCameraLensUI();
 
@@ -3042,6 +3422,7 @@ function updateCameraLensUI() {
 
 }
 
+
 /* =====================================================
    CREATE CAMERA FILTER UI
 ===================================================== */
@@ -3054,10 +3435,6 @@ function createCameraFilterUI() {
         );
 
 
-    /*
-     * Don't create it twice.
-     */
-
     if (!container) {
 
         container =
@@ -3065,8 +3442,10 @@ function createCameraFilterUI() {
                 "div"
             );
 
+
         container.id =
             "cameraFilterSelector";
+
 
         container.className =
             "camera-filter-selector";
@@ -3078,6 +3457,7 @@ function createCameraFilterUI() {
                 captureModal.querySelector(
                     ".camera-modal-content"
                 );
+
 
             if (cameraContent) {
 
@@ -3106,67 +3486,74 @@ function createCameraFilterUI() {
 
         <div class="camera-filter-options">
 
-            ${Object.entries(
-                CAMERA_FILTERS
-            )
-                .map(
-                    (
-                        [
-                            key,
-                            filter
-                        ]
-                    ) => {
-
-                        const active =
-                            key ===
-                            currentCameraFilter;
-
-                        return `
-
-                            <button
-                                type="button"
-                                class="
-                                    camera-filter-button
-                                    ${
-                                        active
-                                            ? "active"
-                                            : ""
-                                    }
-                                "
-                                data-filter="${escapeAttribute(
-                                    key
-                                )}"
-                            >
-
-                                <span
-                                    class="
-                                        camera-filter-preview
-                                        filter-${escapeAttribute(
-                                            key
-                                        )}
-                                    "
-                                >
-                                    Aa
-                                </span>
-
-                                <span>
-                                    ${escapeHTML(
-                                        filter.name
-                                    )}
-                                </span>
-
-                            </button>
-
-                        `;
-
-                    }
+            ${
+                Object.entries(
+                    CAMERA_FILTERS
                 )
-                .join("")}
+                    .map(
+                        (
+                            [
+                                key,
+                                filter
+                            ]
+                        ) => {
+
+                            const active =
+                                key ===
+                                currentCameraFilter;
+
+
+                            return `
+
+                                <button
+                                    type="button"
+                                    class="
+                                        camera-filter-button
+                                        ${
+                                            active
+                                                ? "active"
+                                                : ""
+                                        }
+                                    "
+                                    data-filter="${escapeAttribute(
+                                        key
+                                    )}"
+                                >
+
+                                    <span
+                                        class="
+                                            camera-filter-preview
+                                            filter-${escapeAttribute(
+                                                key
+                                            )}
+                                        "
+                                    >
+                                        Aa
+                                    </span>
+
+                                    <span>
+                                        ${escapeHTML(
+                                            filter.name
+                                        )}
+                                    </span>
+
+                                </button>
+
+                            `;
+
+                        }
+                    )
+                    .join("")
+            }
 
         </div>
 
     `;
 
+
+    /* =================================================
+       FILTER EVENTS
+    ================================================= */
 
     container
         .querySelectorAll(
@@ -3183,6 +3570,7 @@ function createCameraFilterUI() {
                             button.dataset
                                 .filter;
 
+
                         if (
                             !CAMERA_FILTERS[
                                 filter
@@ -3193,17 +3581,13 @@ function createCameraFilterUI() {
 
                         }
 
+
                         currentCameraFilter =
                             filter;
 
 
                         applyCameraFilter();
 
-
-                        /*
-                         * Update active
-                         * button.
-                         */
 
                         container
                             .querySelectorAll(
@@ -3212,13 +3596,12 @@ function createCameraFilterUI() {
                             .forEach(
                                 item => {
 
-                                    item.classList
-                                        .toggle(
-                                            "active",
-                                            item.dataset
-                                                .filter ===
-                                                filter
-                                        );
+                                    item.classList.toggle(
+                                        "active",
+                                        item.dataset
+                                            .filter ===
+                                            filter
+                                    );
 
                                 }
                             );
@@ -3242,6 +3625,7 @@ function applyCameraFilter() {
         return;
     }
 
+
     const filter =
         CAMERA_FILTERS[
             currentCameraFilter
@@ -3264,16 +3648,20 @@ function resetCameraFilter() {
     currentCameraFilter =
         "original";
 
+
     applyCameraFilter();
+
 
     const container =
         document.getElementById(
             "cameraFilterSelector"
         );
 
+
     if (!container) {
         return;
     }
+
 
     container
         .querySelectorAll(
@@ -3293,6 +3681,48 @@ function resetCameraFilter() {
 
 }
 
+
+/* =====================================================
+   APPLY FILTER TO CANVAS
+===================================================== */
+
+function applyFilterToCanvas(
+    context
+) {
+
+    if (!context) {
+        return;
+    }
+
+
+    const filter =
+        CAMERA_FILTERS[
+            currentCameraFilter
+        ] ||
+        CAMERA_FILTERS.original;
+
+
+    /*
+     * Canvas supports the same CSS filter
+     * syntax through ctx.filter.
+     */
+    try {
+
+        context.filter =
+            filter.css;
+
+    } catch (error) {
+
+        console.debug(
+            "Canvas filter unavailable:",
+            error
+        );
+
+    }
+
+}
+
+
 /* =====================================================
    INITIALIZE CAMERA CONTROLS
 ===================================================== */
@@ -3302,6 +3732,11 @@ function initializeCameraControls() {
     createCameraFilterUI();
 
     updateCameraLensUI();
+
+    /*
+     * Load cameras after permission is available.
+     */
+    loadAvailableCameras();
 
 }
 
@@ -3326,9 +3761,6 @@ if (
 
 }
 
-   
-
-   
 
 /* =====================================================
    STOP CAMERA
@@ -3336,22 +3768,43 @@ if (
 
 function stopCamera() {
 
-    if (!cameraStream) {
-        return;
+    if (cameraStream) {
+
+        cameraStream
+            .getTracks()
+            .forEach(
+                track => {
+
+                    try {
+
+                        track.stop();
+
+                    } catch (error) {
+
+                        console.debug(
+                            "Unable to stop camera track:",
+                            error
+                        );
+
+                    }
+
+                }
+            );
+
     }
 
-    cameraStream
-        .getTracks()
-        .forEach(track => {
 
-            track.stop();
+    cameraStream =
+        null;
 
-        });
-
-    cameraStream = null;
 
     if (cameraVideo) {
-        cameraVideo.srcObject = null;
+
+        cameraVideo.pause();
+
+        cameraVideo.srcObject =
+            null;
+
     }
 
 }
@@ -3365,15 +3818,29 @@ function closeCamera() {
 
     stopCamera();
 
-    captureModal.classList.remove(
-        "show"
-    );
+    cameraOpening =
+        false;
+
+    cameraSwitching =
+        false;
+
+    if (captureModal) {
+
+        captureModal.classList.remove(
+            "show"
+        );
+
+    }
 
     document.body.style.overflow =
         "";
 
 }
 
+
+/* =====================================================
+   CLOSE BUTTON
+===================================================== */
 
 if (closeCapture) {
 
@@ -3385,6 +3852,10 @@ if (closeCapture) {
 }
 
 
+/* =====================================================
+   CANCEL CAMERA
+===================================================== */
+
 if (cancelCamera) {
 
     cancelCamera.addEventListener(
@@ -3394,6 +3865,10 @@ if (cancelCamera) {
 
 }
 
+
+/* =====================================================
+   OPEN CAMERA BUTTONS
+===================================================== */
 
 if (captureButton) {
 
@@ -3416,7 +3891,7 @@ if (navCamera) {
 
 
 /* =====================================================
-   SWITCH CAMERA
+   SWITCH FRONT / BACK CAMERA
 ===================================================== */
 
 if (switchCamera) {
@@ -3425,34 +3900,96 @@ if (switchCamera) {
         "click",
         async () => {
 
-            if (cameraOpening) {
+            if (
+                cameraOpening ||
+                cameraSwitching
+            ) {
+
                 return;
+
             }
+
 
             const previousMode =
                 cameraFacingMode;
 
+
+            const previousDevice =
+                selectedCameraDeviceId;
+
+
+            /*
+             * Switch direction.
+             */
             cameraFacingMode =
                 cameraFacingMode === "user"
                     ? "environment"
                     : "user";
 
+
+            /*
+             * IMPORTANT:
+             *
+             * Clear selected device.
+             *
+             * Otherwise startCamera()
+             * would keep reopening the
+             * previously selected physical
+             * camera.
+             */
+            selectedCameraDeviceId =
+                null;
+
+
             try {
 
                 await startCamera();
 
+
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    "Switch camera error:",
+                    error
+                );
 
+
+                /*
+                 * Restore previous state.
+                 */
                 cameraFacingMode =
                     previousMode;
 
+
+                selectedCameraDeviceId =
+                    previousDevice;
+
+
                 try {
 
-                    await startCamera();
+                    if (
+                        previousDevice
+                    ) {
 
-                } catch (secondError) {
+                        await startCamera(
+                            previousDevice
+                        );
+
+                    } else {
+
+                        await startCamera();
+
+                    }
+
+                } catch (
+                    secondError
+                ) {
+
+                    console.error(
+                        "Camera restore error:",
+                        secondError
+                    );
+
 
                     showCameraError(
                         secondError
@@ -3474,9 +4011,15 @@ if (switchCamera) {
 
 function showCameraError(error) {
 
+    if (!cameraError) {
+        return;
+    }
+
+
     cameraError.classList.add(
         "show"
     );
+
 
     if (
         error?.name ===
@@ -3490,6 +4033,7 @@ function showCameraError(error) {
 
     }
 
+
     if (
         error?.name ===
         "NotFoundError"
@@ -3501,6 +4045,7 @@ function showCameraError(error) {
         return;
 
     }
+
 
     if (
         error?.name ===
@@ -3514,6 +4059,33 @@ function showCameraError(error) {
 
     }
 
+
+    if (
+        error?.name ===
+        "OverconstrainedError"
+    ) {
+
+        cameraErrorText.textContent =
+            "This camera does not support the selected quality or lens. Trying another camera may fix it.";
+
+        return;
+
+    }
+
+
+    if (
+        error?.name ===
+        "SecurityError"
+    ) {
+
+        cameraErrorText.textContent =
+            "Camera access is blocked by your browser or page security settings.";
+
+        return;
+
+    }
+
+
     cameraErrorText.textContent =
         error?.message ||
         "Please allow camera access to take an Instant.";
@@ -3521,17 +4093,32 @@ function showCameraError(error) {
 }
 
 
+/* =====================================================
+   RETRY CAMERA
+===================================================== */
+
 if (retryCamera) {
 
     retryCamera.addEventListener(
         "click",
         async () => {
 
+            if (cameraSwitching) {
+                return;
+            }
+
+
             try {
 
                 await startCamera();
 
             } catch (error) {
+
+                console.error(
+                    "Camera retry error:",
+                    error
+                );
+
 
                 showCameraError(
                     error
