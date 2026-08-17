@@ -124,14 +124,44 @@ let capturedPhotoBlob = null;
 
 
 /* =====================================================
+   CAMERA AVAILABILITY
+===================================================== */
+
+const cameraAvailable =
+    captureModal &&
+    closeCapture &&
+    cameraVideo &&
+    liveCamera &&
+    switchCamera &&
+    realCaptureButton &&
+    photoPreview &&
+    capturedImage &&
+    previewClose &&
+    instantCaption &&
+    sendInstantButton;
+
+
+/* =====================================================
    OPEN CAMERA
 ===================================================== */
 
 async function openRealCamera() {
 
+    if (!cameraAvailable) {
+
+        console.error(
+            "L7za Camera: Camera elements are missing from HTML."
+        );
+
+        return;
+
+    }
+
+
     captureModal.classList.add("show");
 
     document.body.style.overflow = "hidden";
+
 
     await startCamera();
 
@@ -144,10 +174,27 @@ async function openRealCamera() {
 
 async function startCamera() {
 
+    if (!cameraAvailable) {
+        return;
+    }
+
+
     stopCamera();
 
 
     try {
+
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
+
+            throw new Error(
+                "Camera API is not supported."
+            );
+
+        }
+
 
         cameraStream =
             await navigator.mediaDevices.getUserMedia({
@@ -173,18 +220,33 @@ async function startCamera() {
             });
 
 
-        cameraVideo.srcObject =
+        const currentVideo =
+            document.getElementById(
+                "cameraVideo"
+            );
+
+
+        if (!currentVideo) {
+
+            throw new Error(
+                "Camera video element not found."
+            );
+
+        }
+
+
+        currentVideo.srcObject =
             cameraStream;
 
 
-        await cameraVideo.play();
+        await currentVideo.play();
 
     }
 
     catch (error) {
 
         console.error(
-            "Camera error:",
+            "L7za Camera Error:",
             error
         );
 
@@ -225,33 +287,41 @@ function stopCamera() {
    SWITCH CAMERA
 ===================================================== */
 
-switchCamera.addEventListener(
-    "click",
-    async event => {
+if (switchCamera) {
 
-        event.stopPropagation();
+    switchCamera.addEventListener(
+        "click",
+        async event => {
 
-
-        currentFacingMode =
-            currentFacingMode === "user"
-                ? "environment"
-                : "user";
+            event.stopPropagation();
 
 
-        await startCamera();
+            currentFacingMode =
+                currentFacingMode === "user"
+                    ? "environment"
+                    : "user";
 
-    }
-);
+
+            await startCamera();
+
+        }
+    );
+
+}
 
 
 /* =====================================================
    CAPTURE PHOTO
 ===================================================== */
 
-realCaptureButton.addEventListener(
-    "click",
-    capturePhoto
-);
+if (realCaptureButton) {
+
+    realCaptureButton.addEventListener(
+        "click",
+        capturePhoto
+    );
+
+}
 
 
 async function capturePhoto() {
@@ -261,13 +331,20 @@ async function capturePhoto() {
     }
 
 
-    /*
-        Make sure video dimensions exist.
-    */
+    const currentVideo =
+        document.getElementById(
+            "cameraVideo"
+        );
+
+
+    if (!currentVideo) {
+        return;
+    }
+
 
     if (
-        !cameraVideo.videoWidth ||
-        !cameraVideo.videoHeight
+        !currentVideo.videoWidth ||
+        !currentVideo.videoHeight
     ) {
 
         return;
@@ -276,26 +353,36 @@ async function capturePhoto() {
 
 
     const canvas =
-        document.createElement("canvas");
+        document.createElement(
+            "canvas"
+        );
 
 
     canvas.width =
-        cameraVideo.videoWidth;
+        currentVideo.videoWidth;
 
 
     canvas.height =
-        cameraVideo.videoHeight;
+        currentVideo.videoHeight;
 
 
     const context =
         canvas.getContext("2d");
 
 
+    if (!context) {
+        return;
+    }
+
+
     /*
-        Mirror only the front camera.
+        Mirror front camera.
     */
 
-    if (currentFacingMode === "user") {
+    if (
+        currentFacingMode ===
+        "user"
+    ) {
 
         context.translate(
             canvas.width,
@@ -311,7 +398,7 @@ async function capturePhoto() {
 
 
     context.drawImage(
-        cameraVideo,
+        currentVideo,
         0,
         0,
         canvas.width,
@@ -319,11 +406,8 @@ async function capturePhoto() {
     );
 
 
-    /*
-        Convert canvas to WebP.
-    */
-
     canvas.toBlob(
+
         blob => {
 
             if (!blob) {
@@ -331,11 +415,14 @@ async function capturePhoto() {
             }
 
 
-            capturedPhotoBlob = blob;
+            capturedPhotoBlob =
+                blob;
 
 
             const imageURL =
-                URL.createObjectURL(blob);
+                URL.createObjectURL(
+                    blob
+                );
 
 
             capturedImage.src =
@@ -354,7 +441,8 @@ async function capturePhoto() {
             stopCamera();
 
 
-            instantCaption.value = "";
+            instantCaption.value =
+                "";
 
 
             setTimeout(() => {
@@ -383,12 +471,17 @@ function closeRealCamera() {
     stopCamera();
 
 
-    captureModal.classList.remove(
-        "show"
-    );
+    if (captureModal) {
+
+        captureModal.classList.remove(
+            "show"
+        );
+
+    }
 
 
-    document.body.style.overflow = "";
+    document.body.style.overflow =
+        "";
 
 
     resetCameraUI();
@@ -396,30 +489,32 @@ function closeRealCamera() {
 }
 
 
-closeCapture.addEventListener(
-    "click",
-    closeRealCamera
-);
+if (closeCapture) {
+
+    closeCapture.addEventListener(
+        "click",
+        closeRealCamera
+    );
+
+}
 
 
 /* =====================================================
    PREVIEW CLOSE
 ===================================================== */
 
-previewClose.addEventListener(
-    "click",
-    () => {
+if (previewClose) {
 
-        /*
-            Since there is NO RETAKE,
-            closing the preview cancels
-            this Instant completely.
-        */
+    previewClose.addEventListener(
+        "click",
+        () => {
 
-        closeRealCamera();
+            closeRealCamera();
 
-    }
-);
+        }
+    );
+
+}
 
 
 /* =====================================================
@@ -428,22 +523,38 @@ previewClose.addEventListener(
 
 function resetCameraUI() {
 
-    photoPreview.classList.remove(
-        "active"
-    );
+    if (photoPreview) {
+
+        photoPreview.classList.remove(
+            "active"
+        );
+
+    }
 
 
-    liveCamera.style.display =
-        "block";
+    if (liveCamera) {
+
+        liveCamera.style.display =
+            "block";
+
+    }
 
 
-    capturedImage.src = "";
+    if (capturedImage) {
+
+        capturedImage.src = "";
+
+    }
 
 
     capturedPhotoBlob = null;
 
 
-    instantCaption.value = "";
+    if (instantCaption) {
+
+        instantCaption.value = "";
+
+    }
 
 }
 
@@ -452,10 +563,14 @@ function resetCameraUI() {
    SEND INSTANT
 ===================================================== */
 
-sendInstantButton.addEventListener(
-    "click",
-    sendInstant
-);
+if (sendInstantButton) {
+
+    sendInstantButton.addEventListener(
+        "click",
+        sendInstant
+    );
+
+}
 
 
 function sendInstant() {
@@ -466,31 +581,22 @@ function sendInstant() {
 
 
     const caption =
-        instantCaption.value.trim();
+        instantCaption
+            ? instantCaption.value.trim()
+            : "";
 
-
-    /*
-        Temporary local Instant.
-        Supabase will replace this
-        in the backend phase.
-    */
 
     const temporaryInstant = {
 
-        id:
-            Date.now(),
+        id: Date.now(),
 
-        name:
-            "You",
+        name: "You",
 
-        username:
-            "@you",
+        username: "@you",
 
-        avatar:
-            "O",
+        avatar: "O",
 
-        time:
-            "Just now",
+        time: "Just now",
 
         caption:
             caption || " ",
@@ -498,36 +604,21 @@ function sendInstant() {
         photoBlob:
             capturedPhotoBlob,
 
-        likes:
-            0,
+        likes: 0,
 
-        seen:
-            0
+        seen: 0
 
     };
 
-
-    /*
-        Store temporarily in memory.
-    */
 
     window.myLatestInstant =
         temporaryInstant;
 
 
-    /*
-        Close camera.
-    */
-
     closeRealCamera();
 
 
-    /*
-        Small confirmation.
-    */
-
     showInstantSent();
-
 
 }
 
@@ -539,7 +630,9 @@ function sendInstant() {
 function showInstantSent() {
 
     const message =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     message.style.position =
@@ -610,6 +703,11 @@ function showInstantSent() {
 
 function showCameraError() {
 
+    if (!liveCamera) {
+        return;
+    }
+
+
     liveCamera.innerHTML = `
 
         <div class="camera-error">
@@ -629,7 +727,10 @@ function showCameraError() {
                 and try again.
             </p>
 
-            <button id="retryCamera">
+            <button
+                type="button"
+                id="retryCamera"
+            >
                 Try again
             </button>
 
@@ -644,40 +745,30 @@ function showCameraError() {
         );
 
 
-    retry.addEventListener(
-        "click",
-        () => {
+    if (retry) {
 
-            /*
-                Restore video UI.
-            */
+        retry.addEventListener(
+            "click",
+            async () => {
 
-            liveCamera.innerHTML = `
+                liveCamera.innerHTML = `
 
-                <video
-                    id="cameraVideo"
-                    autoplay
-                    playsinline
-                    muted
-                ></video>
+                    <video
+                        id="cameraVideo"
+                        autoplay
+                        playsinline
+                        muted
+                    ></video>
 
-            `;
+                `;
 
 
-            /*
-                Reconnect reference.
-            */
+                await startCamera();
 
-            window.cameraVideo =
-                document.getElementById(
-                    "cameraVideo"
-                );
+            }
+        );
 
-
-            startCamera();
-
-        }
-    );
+    }
 
 }
 
@@ -686,37 +777,49 @@ function showCameraError() {
    OPEN CAMERA BUTTONS
 ===================================================== */
 
-captureButton.addEventListener(
-    "click",
-    openRealCamera
-);
+if (captureButton) {
+
+    captureButton.addEventListener(
+        "click",
+        openRealCamera
+    );
+
+}
 
 
-navCamera.addEventListener(
-    "click",
-    openRealCamera
-);
+if (navCamera) {
+
+    navCamera.addEventListener(
+        "click",
+        openRealCamera
+    );
+
+}
 
 
 /* =====================================================
    CLOSE WHEN CLICKING BACKDROP
 ===================================================== */
 
-captureModal.addEventListener(
-    "click",
-    event => {
+if (captureModal) {
 
-        if (
-            event.target ===
-            captureModal
-        ) {
+    captureModal.addEventListener(
+        "click",
+        event => {
 
-            closeRealCamera();
+            if (
+                event.target ===
+                captureModal
+            ) {
+
+                closeRealCamera();
+
+            }
 
         }
+    );
 
-    }
-);
+}
 
 
 /* =====================================================
