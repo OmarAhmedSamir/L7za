@@ -36,7 +36,7 @@
 
 
     <!-- =====================================================
-         AUTH SCREEN
+         AUTH
     ====================================================== -->
 
     <section
@@ -47,13 +47,9 @@
         <div class="auth-card">
 
             <div class="auth-brand">
-
                 <span class="brand-dot"></span>
-
                 <span>L7za</span>
-
             </div>
-
 
             <div class="auth-heading">
 
@@ -161,13 +157,10 @@
                 class="auth-switch"
                 id="authSwitch"
             >
-
                 Don't have an account?
-
                 <strong>
                     Sign up
                 </strong>
-
             </button>
 
 
@@ -191,9 +184,7 @@
     >
 
 
-        <!-- =================================================
-             TOP BAR
-        ================================================== -->
+        <!-- TOP BAR -->
 
         <header class="topbar">
 
@@ -207,7 +198,7 @@
 
 
             <button
-                class="icon-button"
+                class="icon-button glass-button"
                 id="requestsButton"
                 aria-label="Friend requests"
             >
@@ -216,7 +207,10 @@
                     ♡
                 </span>
 
-                <span class="notification-dot"></span>
+                <span
+                    class="notification-dot"
+                    id="notificationDot"
+                ></span>
 
             </button>
 
@@ -224,9 +218,7 @@
 
 
 
-        <!-- =================================================
-             MAIN CONTENT
-        ================================================== -->
+        <!-- MAIN CONTENT -->
 
         <main class="main-content">
 
@@ -258,10 +250,7 @@
                 </div>
 
 
-
-                <!-- =================================================
-                     CAMERA CARD
-                ================================================== -->
+                <!-- CAMERA CARD -->
 
                 <div
                     class="camera-card"
@@ -293,9 +282,7 @@
                                 id="captureButton"
                                 aria-label="Open camera"
                             >
-
                                 <span></span>
-
                             </button>
 
                             <small>
@@ -310,9 +297,7 @@
 
 
 
-                <!-- =================================================
-                     FRIEND INSTANTS
-                ================================================== -->
+                <!-- FRIENDS -->
 
                 <div class="section-header">
 
@@ -340,22 +325,19 @@
 
                 <!--
                     IMPORTANT:
-                    This is intentionally empty.
-
-                    JavaScript should populate this with
-                    REAL friends from Supabase.
+                    No fake users here.
+                    JS fills this from Supabase.
                 -->
 
                 <div
-                    class="friends-strip"
+                    class="friends-strip glass-strip"
                     id="friendsStrip"
                 ></div>
 
 
                 <button
-                    class="instant-count"
+                    class="instant-count glass-panel"
                     id="instantCount"
-                    type="button"
                 >
 
                     <div class="count-icon">
@@ -393,28 +375,26 @@
                 id="instantsScreen"
             >
 
-                <div class="screen-header">
+                <div class="screen-header instants-header">
 
                     <button
-                        class="back-button instant-back-button"
+                        class="back-button"
                         data-back="homeScreen"
-                        type="button"
                     >
                         ←
-                        <span>
-                            Back to Home
-                        </span>
                     </button>
 
+                    <div class="instants-title">
 
-                    <div class="instant-screen-title">
+                        <p class="eyebrow">
+                            MOMENTS
+                        </p>
 
                         <h1>
                             Instants
                         </h1>
 
                     </div>
-
 
                     <div class="progress-count">
 
@@ -481,7 +461,7 @@
                 </div>
 
 
-                <div class="search-box">
+                <div class="search-box liquid-glass">
 
                     <span>
                         ⌕
@@ -497,12 +477,11 @@
                 </div>
 
 
-                <div class="friend-tabs">
+                <div class="friend-tabs glass-tabs">
 
                     <button
                         class="friend-tab active"
                         data-tab="friends"
-                        type="button"
                     >
                         Friends
                     </button>
@@ -510,12 +489,13 @@
                     <button
                         class="friend-tab"
                         data-tab="requests"
-                        type="button"
                     >
-
                         Requests
 
-                        <span class="tab-badge">
+                        <span
+                            class="tab-badge"
+                            id="requestBadge"
+                        >
                             0
                         </span>
 
@@ -547,7 +527,6 @@
                     <button
                         class="back-button"
                         data-back="friendsScreen"
-                        type="button"
                     >
                         ←
                     </button>
@@ -591,7 +570,6 @@
                         class="settings-button"
                         id="logoutButton"
                         aria-label="Sign out"
-                        type="button"
                     >
                         ↪
                     </button>
@@ -609,11 +587,11 @@
                     </div>
 
                     <h1 id="profileName">
-                        User
+                        Omar
                     </h1>
 
                     <p id="profileUsername">
-                        @user
+                        @omar
                     </p>
 
 
@@ -650,7 +628,6 @@
                     <button
                         class="edit-profile-button"
                         id="editProfileButton"
-                        type="button"
                     >
                         Edit profile
                     </button>
@@ -699,7 +676,6 @@
             <button
                 class="nav-item active"
                 data-screen="homeScreen"
-                type="button"
             >
 
                 <span class="nav-icon">
@@ -716,7 +692,6 @@
             <button
                 class="nav-item"
                 data-screen="instantsScreen"
-                type="button"
             >
 
                 <span class="nav-icon">
@@ -734,7 +709,6 @@
                 class="nav-camera"
                 id="navCamera"
                 aria-label="Open camera"
-                type="button"
             >
 
                 <span>
@@ -747,7 +721,6 @@
             <button
                 class="nav-item"
                 data-screen="friendsScreen"
-                type="button"
             >
 
                 <span class="nav-icon">
@@ -764,7 +737,6 @@
             <button
                 class="nav-item"
                 data-screen="profileScreen"
-                type="button"
             >
 
                 <span class="nav-icon">
@@ -794,8 +766,6 @@
 
         <div class="real-camera">
 
-            <!-- LIVE CAMERA -->
-
             <video
                 id="cameraVideo"
                 autoplay
@@ -808,29 +778,24 @@
             ></canvas>
 
 
-            <!-- CAMERA TOP -->
+            <!-- TOP -->
 
             <div class="camera-top-controls">
 
                 <button
-                    class="camera-control liquid-glass"
+                    class="camera-control"
                     id="closeCapture"
-                    type="button"
-                    aria-label="Close camera"
                 >
                     ×
                 </button>
 
-
-                <div class="camera-mode liquid-glass">
+                <div class="camera-mode">
                     L7za
                 </div>
 
-
                 <button
-                    class="camera-control liquid-glass"
+                    class="camera-control"
                     id="switchCamera"
-                    type="button"
                     aria-label="Switch camera"
                 >
                     ↻
@@ -839,40 +804,19 @@
             </div>
 
 
-
-            <!-- =================================================
-                 LENS SELECTOR
-                 JavaScript fills this dynamically.
-            ================================================== -->
-
-            <div
-                id="cameraLensSelector"
-                class="camera-lens-selector"
-            ></div>
-
-
-
-            <!-- =================================================
-                 CAMERA GUIDES
-            ================================================== -->
+            <!-- CAMERA GUIDES -->
 
             <div class="camera-guides">
 
                 <div class="guide-corner top-left"></div>
-
                 <div class="guide-corner top-right"></div>
-
                 <div class="guide-corner bottom-left"></div>
-
                 <div class="guide-corner bottom-right"></div>
 
             </div>
 
 
-
-            <!-- =================================================
-                 CAMERA ERROR
-            ================================================== -->
+            <!-- CAMERA ERROR -->
 
             <div
                 class="camera-error"
@@ -894,7 +838,6 @@
                 <button
                     class="retry-camera"
                     id="retryCamera"
-                    type="button"
                 >
                     Try again
                 </button>
@@ -902,21 +845,27 @@
             </div>
 
 
-
-            <!-- =================================================
-                 CAMERA BOTTOM
-            ================================================== -->
+            <!-- CAMERA BOTTOM -->
 
             <div class="camera-bottom-controls">
 
-                <div class="camera-bottom-side"></div>
+                <div class="camera-bottom-side">
+
+                    <button
+                        class="camera-secondary-button"
+                        id="cameraLensButton"
+                        type="button"
+                    >
+                        Lens
+                    </button>
+
+                </div>
 
 
                 <button
                     class="real-capture-button"
                     id="realCaptureButton"
                     aria-label="Take photo"
-                    type="button"
                 >
 
                     <span></span>
@@ -929,7 +878,6 @@
                     <button
                         class="camera-close-text"
                         id="cancelCamera"
-                        type="button"
                     >
                         Cancel
                     </button>
@@ -939,16 +887,94 @@
             </div>
 
 
-
-            <!-- =================================================
-                 FILTER SELECTOR
-                 JavaScript generates the 6 filters here.
-            ================================================== -->
+            <!-- LENS PANEL -->
 
             <div
-                id="cameraFilterSelector"
-                class="camera-filter-selector"
-            ></div>
+                class="camera-lens-panel liquid-glass"
+                id="cameraLensPanel"
+            >
+
+                <div class="camera-panel-title">
+                    Camera
+                </div>
+
+                <div
+                    class="lens-options"
+                    id="lensOptions"
+                ></div>
+
+            </div>
+
+
+            <!-- FILTERS -->
+
+            <div class="camera-filters-wrap">
+
+                <div class="camera-filters-label">
+                    FILTER
+                </div>
+
+                <div
+                    class="camera-filters"
+                    id="cameraFilters"
+                >
+
+                    <button
+                        class="filter-chip active"
+                        data-filter="original"
+                    >
+                        <span class="filter-preview filter-original"></span>
+                        Original
+                    </button>
+
+
+                    <button
+                        class="filter-chip"
+                        data-filter="mono"
+                    >
+                        <span class="filter-preview filter-mono"></span>
+                        Mono
+                    </button>
+
+
+                    <button
+                        class="filter-chip"
+                        data-filter="fade"
+                    >
+                        <span class="filter-preview filter-fade"></span>
+                        Fade
+                    </button>
+
+
+                    <button
+                        class="filter-chip"
+                        data-filter="warm"
+                    >
+                        <span class="filter-preview filter-warm"></span>
+                        Warm
+                    </button>
+
+
+                    <button
+                        class="filter-chip"
+                        data-filter="cool"
+                    >
+                        <span class="filter-preview filter-cool"></span>
+                        Cool
+                    </button>
+
+
+                    <button
+                        class="filter-chip"
+                        data-filter="noir"
+                    >
+                        <span class="filter-preview filter-noir"></span>
+                        Noir
+                    </button>
+
+                </div>
+
+            </div>
 
         </div>
 
@@ -990,7 +1016,6 @@
                 <button
                     class="post-instant-button"
                     id="postInstantButton"
-                    type="button"
                 >
                     Post Instant
                 </button>
@@ -998,7 +1023,6 @@
                 <button
                     class="discard-button"
                     id="discardButton"
-                    type="button"
                 >
                     Discard
                 </button>
@@ -1020,7 +1044,7 @@
         id="editProfileModal"
     >
 
-        <div class="edit-profile-card liquid-glass-card">
+        <div class="edit-profile-card liquid-glass">
 
             <div class="edit-profile-header">
 
@@ -1037,10 +1061,9 @@
                 </div>
 
                 <button
-                    type="button"
                     class="modal-close-button"
                     id="closeEditProfile"
-                    aria-label="Close"
+                    type="button"
                 >
                     ×
                 </button>
@@ -1053,15 +1076,14 @@
                 <div class="auth-field">
 
                     <label for="editDisplayName">
-                        Display name
+                        Name
                     </label>
 
                     <input
                         type="text"
                         id="editDisplayName"
-                        maxlength="40"
+                        maxlength="50"
                         autocomplete="name"
-                        placeholder="Your name"
                     >
 
                 </div>
@@ -1078,7 +1100,6 @@
                         id="editUsername"
                         maxlength="24"
                         autocomplete="username"
-                        placeholder="username"
                     >
 
                 </div>
@@ -1091,9 +1112,9 @@
 
 
                 <button
-                    type="button"
                     class="save-profile-button"
                     id="saveProfileButton"
+                    type="button"
                 >
                     Save changes
                 </button>
@@ -1115,7 +1136,6 @@
     ></script>
 
     <script src="app.js"></script>
-
 
 </div>
 
