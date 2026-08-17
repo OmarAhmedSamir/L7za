@@ -1,92 +1,7 @@
 /* =====================================================
    L7ZA — PHASE 2
+   REAL CAMERA + INSTANTS
 ===================================================== */
-
-
-/* =====================================================
-   STORAGE
-===================================================== */
-
-const STORAGE_KEY = "l7za_phase2_instants";
-
-let localInstants = [];
-
-try {
-    localInstants =
-        JSON.parse(
-            localStorage.getItem(STORAGE_KEY)
-        ) || [];
-} catch {
-    localInstants = [];
-}
-
-
-/* =====================================================
-   HELPERS
-===================================================== */
-
-function $(id) {
-    return document.getElementById(id);
-}
-
-
-function escapeHTML(value) {
-
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-
-}
-
-
-function saveLocalInstants() {
-
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(localInstants)
-    );
-
-}
-
-
-function showToast(message) {
-
-    let toast =
-        document.querySelector(
-            ".l7za-toast"
-        );
-
-    if (!toast) {
-
-        toast =
-            document.createElement("div");
-
-        toast.className =
-            "l7za-toast";
-
-        document.body.appendChild(toast);
-
-    }
-
-    toast.textContent = message;
-
-    toast.classList.add("show");
-
-    clearTimeout(
-        window.__l7zaToastTimer
-    );
-
-    window.__l7zaToastTimer =
-        setTimeout(() => {
-
-            toast.classList.remove("show");
-
-        }, 2200);
-
-}
 
 
 /* =====================================================
@@ -190,263 +105,129 @@ document
 
 
 /* =====================================================
-   CAMERA SYSTEM
+   CAMERA ELEMENTS
 ===================================================== */
 
 const captureButton =
-    $("captureButton");
+    document.getElementById(
+        "captureButton"
+    );
 
 const navCamera =
-    $("navCamera");
+    document.getElementById(
+        "navCamera"
+    );
 
 const captureModal =
-    $("captureModal");
+    document.getElementById(
+        "captureModal"
+    );
 
 const closeCapture =
-    $("closeCapture");
+    document.getElementById(
+        "closeCapture"
+    );
 
+const cancelCamera =
+    document.getElementById(
+        "cancelCamera"
+    );
 
-let cameraStream = null;
+const switchCamera =
+    document.getElementById(
+        "switchCamera"
+    );
 
-let currentFacingMode = "environment";
+const retryCamera =
+    document.getElementById(
+        "retryCamera"
+    );
 
-let capturedImageData = null;
+const cameraVideo =
+    document.getElementById(
+        "cameraVideo"
+    );
 
-let cameraReady = false;
+const cameraCanvas =
+    document.getElementById(
+        "cameraCanvas"
+    );
+
+const realCaptureButton =
+    document.getElementById(
+        "realCaptureButton"
+    );
+
+const cameraError =
+    document.getElementById(
+        "cameraError"
+    );
+
+const cameraErrorText =
+    document.getElementById(
+        "cameraErrorText"
+    );
 
 
 /* =====================================================
-   BUILD PHASE 2 CAMERA
+   CAMERA STATE
 ===================================================== */
 
-function buildCameraUI() {
+let cameraStream = null;
 
-    if (!captureModal) {
+let cameraFacingMode = "user";
+
+let cameraOpening = false;
+
+
+/* =====================================================
+   OPEN CAMERA
+===================================================== */
+
+async function openCamera() {
+
+    if (cameraOpening) {
+
         return;
+
     }
 
 
-    const content =
-        captureModal.querySelector(
-            ".modal-content"
+    cameraOpening = true;
+
+
+    captureModal.classList.add(
+        "show"
+    );
+
+
+    document.body.style.overflow =
+        "hidden";
+
+
+    cameraError.classList.remove(
+        "show"
+    );
+
+
+    try {
+
+        await startCamera();
+
+    } catch (error) {
+
+        console.error(
+            "Camera error:",
+            error
         );
 
+        showCameraError(error);
 
-    if (!content) {
-        return;
+    } finally {
+
+        cameraOpening = false;
+
     }
-
-
-    content.innerHTML = `
-
-        <button
-            class="modal-close"
-            id="phase2CloseCamera"
-            aria-label="Close camera"
-        >
-            ×
-        </button>
-
-
-        <div class="phase2-camera">
-
-
-            <video
-                id="cameraVideo"
-                class="camera-video"
-                autoplay
-                muted
-                playsinline
-            ></video>
-
-
-            <div class="camera-top-controls">
-
-                <button
-                    class="camera-control-button"
-                    id="switchCamera"
-                    type="button"
-                    aria-label="Switch camera"
-                >
-                    ↻
-                </button>
-
-            </div>
-
-
-            <div
-                class="camera-status"
-                id="cameraStatus"
-            >
-                Camera
-            </div>
-
-
-            <div
-                class="camera-bottom-controls"
-            >
-
-                <button
-                    class="camera-capture"
-                    id="phase2Capture"
-                    type="button"
-                    aria-label="Capture"
-                ></button>
-
-            </div>
-
-
-            <div
-                class="camera-error"
-                id="cameraError"
-                style="display:none;"
-            >
-
-                <div class="camera-error-inner">
-
-                    <div
-                        class="camera-error-icon"
-                    >
-                        📷
-                    </div>
-
-                    <h2>
-                        Camera unavailable
-                    </h2>
-
-                    <p id="cameraErrorText">
-                        Camera access is required
-                        to create an Instant.
-                    </p>
-
-                    <button
-                        id="retryCamera"
-                        type="button"
-                    >
-                        Try again
-                    </button>
-
-                </div>
-
-            </div>
-
-
-            <div
-                class="capture-preview"
-                id="capturePreview"
-            >
-
-                <img
-                    id="previewImage"
-                    class="preview-image"
-                    alt="Captured instant"
-                >
-
-
-                <div class="preview-bottom">
-
-                    <textarea
-                        id="captionInput"
-                        class="caption-input"
-                        maxlength="180"
-                        placeholder="Add a caption... (optional)"
-                    ></textarea>
-
-
-                    <div class="preview-actions">
-
-                        <button
-                            class="preview-action preview-send"
-                            id="sendInstant"
-                            type="button"
-                        >
-                            Send
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div
-                class="send-success"
-                id="sendSuccess"
-            >
-
-                <div>
-
-                    <div
-                        class="send-success-icon"
-                    >
-                        ✓
-                    </div>
-
-                    <h2>
-                        Sent
-                    </h2>
-
-                    <p>
-                        Your Instant was saved.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </div>
-    `;
-
-
-    document
-        .getElementById(
-            "phase2CloseCamera"
-        )
-        .addEventListener(
-            "click",
-            closeCamera
-        );
-
-
-    document
-        .getElementById(
-            "switchCamera"
-        )
-        .addEventListener(
-            "click",
-            switchCamera
-        );
-
-
-    document
-        .getElementById(
-            "phase2Capture"
-        )
-        .addEventListener(
-            "click",
-            capturePhoto
-        );
-
-
-    document
-        .getElementById(
-            "retryCamera"
-        )
-        .addEventListener(
-            "click",
-            startCamera
-        );
-
-
-    document
-        .getElementById(
-            "sendInstant"
-        )
-        .addEventListener(
-            "click",
-            sendInstant
-        );
 
 }
 
@@ -457,39 +238,12 @@ function buildCameraUI() {
 
 async function startCamera() {
 
-    const video =
-        $("cameraVideo");
-
-    const error =
-        $("cameraError");
-
-    const errorText =
-        $("cameraErrorText");
-
-    const status =
-        $("cameraStatus");
-
-
-    if (!video) {
-        return;
-    }
-
-
-    cameraReady = false;
-
-
-    if (error) {
-        error.style.display = "none";
-    }
-
-
-    if (status) {
-        status.textContent =
-            "Starting camera...";
-    }
-
-
     stopCamera();
+
+
+    cameraError.classList.remove(
+        "show"
+    );
 
 
     if (
@@ -497,177 +251,48 @@ async function startCamera() {
         !navigator.mediaDevices.getUserMedia
     ) {
 
-        showCameraError(
-            "Your browser does not support camera access."
+        throw new Error(
+            "Camera API is not supported in this browser."
         );
-
-        return;
 
     }
 
 
-    try {
+    const constraints = {
 
-        cameraStream =
-            await navigator.mediaDevices
-                .getUserMedia({
+        audio: false,
 
-                    video: {
-                        facingMode:
-                            currentFacingMode,
+        video: {
 
-                        width: {
-                            ideal: 1080
-                        },
+            facingMode: {
+                ideal: cameraFacingMode
+            },
 
-                        height: {
-                            ideal: 1920
-                        }
-                    },
+            width: {
+                ideal: 1920
+            },
 
-                    audio: false
-
-                });
-
-
-        video.srcObject =
-            cameraStream;
-
-
-        await video.play();
-
-
-        cameraReady = true;
-
-
-        if (currentFacingMode === "user") {
-
-            video.classList.add(
-                "mirrored"
-            );
-
-            status.textContent =
-                "Front camera";
-
-        } else {
-
-            video.classList.remove(
-                "mirrored"
-            );
-
-            status.textContent =
-                "Back camera";
+            height: {
+                ideal: 1080
+            }
 
         }
 
-
-    } catch (errorObject) {
-
-        console.error(
-            "Camera error:",
-            errorObject
-        );
+    };
 
 
-        showCameraError(
-            getCameraErrorMessage(
-                errorObject
-            )
-        );
-
-    }
-
-}
+    cameraStream =
+        await navigator.mediaDevices
+            .getUserMedia(
+                constraints
+            );
 
 
-/* =====================================================
-   CAMERA ERROR
-===================================================== */
-
-function getCameraErrorMessage(error) {
-
-    if (
-        error &&
-        error.name ===
-        "NotAllowedError"
-    ) {
-
-        return (
-            "Camera permission was denied. " +
-            "Allow camera access in your browser settings."
-        );
-
-    }
+    cameraVideo.srcObject =
+        cameraStream;
 
 
-    if (
-        error &&
-        error.name ===
-        "NotFoundError"
-    ) {
-
-        return (
-            "No camera was found on this device."
-        );
-
-    }
-
-
-    if (
-        error &&
-        error.name ===
-        "NotReadableError"
-    ) {
-
-        return (
-            "The camera is currently being used by another app."
-        );
-
-    }
-
-
-    return (
-        "We couldn't start the camera. " +
-        "Please try again."
-    );
-
-}
-
-
-function showCameraError(message) {
-
-    const error =
-        $("cameraError");
-
-    const errorText =
-        $("cameraErrorText");
-
-    const status =
-        $("cameraStatus");
-
-
-    if (errorText) {
-
-        errorText.textContent =
-            message;
-
-    }
-
-
-    if (error) {
-
-        error.style.display =
-            "flex";
-
-    }
-
-
-    if (status) {
-
-        status.textContent =
-            "Camera unavailable";
-
-    }
+    await cameraVideo.play();
 
 }
 
@@ -679,7 +304,9 @@ function showCameraError(message) {
 function stopCamera() {
 
     if (!cameraStream) {
+
         return;
+
     }
 
 
@@ -694,341 +321,8 @@ function stopCamera() {
 
     cameraStream = null;
 
-    cameraReady = false;
 
-}
-
-
-/* =====================================================
-   SWITCH CAMERA
-===================================================== */
-
-async function switchCamera() {
-
-    if (!cameraReady) {
-        return;
-    }
-
-
-    currentFacingMode =
-        currentFacingMode === "environment"
-            ? "user"
-            : "environment";
-
-
-    await startCamera();
-
-}
-
-
-/* =====================================================
-   CAPTURE PHOTO
-===================================================== */
-
-function capturePhoto() {
-
-    if (!cameraReady) {
-        return;
-    }
-
-
-    const video =
-        $("cameraVideo");
-
-    const preview =
-        $("capturePreview");
-
-    const image =
-        $("previewImage");
-
-    const capture =
-        $("phase2Capture");
-
-
-    if (
-        !video ||
-        !preview ||
-        !image
-    ) {
-        return;
-    }
-
-
-    const canvas =
-        document.createElement(
-            "canvas"
-        );
-
-
-    canvas.width =
-        video.videoWidth;
-
-    canvas.height =
-        video.videoHeight;
-
-
-    const context =
-        canvas.getContext("2d");
-
-
-    if (!context) {
-        return;
-    }
-
-
-    if (
-        currentFacingMode ===
-        "user"
-    ) {
-
-        context.translate(
-            canvas.width,
-            0
-        );
-
-        context.scale(
-            -1,
-            1
-        );
-
-    }
-
-
-    context.drawImage(
-        video,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-
-
-    capturedImageData =
-        canvas.toDataURL(
-            "image/jpeg",
-            .82
-        );
-
-
-    image.src =
-        capturedImageData;
-
-
-    preview.classList.add(
-        "show"
-    );
-
-
-    /*
-        Important:
-        No Retake button.
-        The user can only Send.
-    */
-
-    if (capture) {
-
-        capture.disabled =
-            true;
-
-    }
-
-    stopCamera();
-
-}
-
-
-/* =====================================================
-   SEND INSTANT
-===================================================== */
-
-function sendInstant() {
-
-    if (!capturedImageData) {
-        return;
-    }
-
-
-    const captionInput =
-        $("captionInput");
-
-
-    const caption =
-        captionInput
-            ? captionInput.value.trim()
-            : "";
-
-
-    const newInstant = {
-
-        id:
-            "local-" +
-            Date.now(),
-
-        name: "You",
-
-        username: "@you",
-
-        avatar: "Y",
-
-        time: "Just now",
-
-        caption: caption,
-
-        image: capturedImageData,
-
-        likes: 0,
-
-        seen: 0,
-
-        local: true
-
-    };
-
-
-    localInstants.unshift(
-        newInstant
-    );
-
-
-    saveLocalInstants();
-
-
-    renderLocalProfile();
-
-
-    updateHomeInstantCount();
-
-
-    const success =
-        $("sendSuccess");
-
-    const preview =
-        $("capturePreview");
-
-
-    if (preview) {
-
-        preview.classList.remove(
-            "show"
-        );
-
-    }
-
-
-    if (success) {
-
-        success.classList.add(
-            "show"
-        );
-
-    }
-
-
-    showToast(
-        "Instant sent ✓"
-    );
-
-
-    setTimeout(() => {
-
-        closeCamera();
-
-    }, 1000);
-
-}
-
-
-/* =====================================================
-   OPEN CAMERA
-===================================================== */
-
-function openCamera() {
-
-    if (!captureModal) {
-        return;
-    }
-
-
-    captureModal.classList.add(
-        "show"
-    );
-
-
-    document.body.style.overflow =
-        "hidden";
-
-
-    resetCameraState();
-
-    startCamera();
-
-}
-
-
-/* =====================================================
-   RESET CAMERA STATE
-===================================================== */
-
-function resetCameraState() {
-
-    capturedImageData = null;
-
-
-    const preview =
-        $("capturePreview");
-
-    const success =
-        $("sendSuccess");
-
-    const image =
-        $("previewImage");
-
-    const caption =
-        $("captionInput");
-
-    const capture =
-        $("phase2Capture");
-
-
-    if (preview) {
-
-        preview.classList.remove(
-            "show"
-        );
-
-    }
-
-
-    if (success) {
-
-        success.classList.remove(
-            "show"
-        );
-
-    }
-
-
-    if (image) {
-
-        image.removeAttribute(
-            "src"
-        );
-
-    }
-
-
-    if (caption) {
-
-        caption.value = "";
-
-    }
-
-
-    if (capture) {
-
-        capture.disabled = false;
-
-    }
+    cameraVideo.srcObject = null;
 
 }
 
@@ -1042,96 +336,98 @@ function closeCamera() {
     stopCamera();
 
 
-    if (captureModal) {
-
-        captureModal.classList.remove(
-            "show"
-        );
-
-    }
+    captureModal.classList.remove(
+        "show"
+    );
 
 
     document.body.style.overflow =
         "";
 
-
-    capturedImageData = null;
-
 }
+
+
+closeCapture.addEventListener(
+    "click",
+    closeCamera
+);
+
+
+cancelCamera.addEventListener(
+    "click",
+    closeCamera
+);
 
 
 /* =====================================================
-   CAMERA EVENTS
+   OPEN CAMERA BUTTONS
 ===================================================== */
 
-if (captureButton) {
-
-    captureButton.addEventListener(
-        "click",
-        openCamera
-    );
-
-}
+captureButton.addEventListener(
+    "click",
+    openCamera
+);
 
 
-if (navCamera) {
-
-    navCamera.addEventListener(
-        "click",
-        openCamera
-    );
-
-}
+navCamera.addEventListener(
+    "click",
+    openCamera
+);
 
 
-if (closeCapture) {
+/* =====================================================
+   SWITCH CAMERA
+===================================================== */
 
-    closeCapture.addEventListener(
-        "click",
-        closeCamera
-    );
+switchCamera.addEventListener(
+    "click",
+    async () => {
 
-}
+        if (cameraOpening) {
 
-
-if (captureModal) {
-
-    captureModal.addEventListener(
-        "click",
-        event => {
-
-            if (
-                event.target ===
-                captureModal
-            ) {
-
-                closeCamera();
-
-            }
+            return;
 
         }
-    );
-
-}
 
 
-/* =====================================================
-   ESC CLOSE
-===================================================== */
+        cameraFacingMode =
+            cameraFacingMode === "user"
+                ? "environment"
+                : "user";
 
-document.addEventListener(
-    "keydown",
-    event => {
 
-        if (
-            event.key === "Escape" &&
-            captureModal &&
-            captureModal.classList.contains(
-                "show"
-            )
-        ) {
+        try {
 
-            closeCamera();
+            await startCamera();
+
+        } catch (error) {
+
+            console.error(
+                error
+            );
+
+            /*
+                Some desktop browsers
+                don't support camera switching.
+            */
+
+            cameraFacingMode =
+                cameraFacingMode === "user"
+                    ? "environment"
+                    : "user";
+
+
+            try {
+
+                await startCamera();
+
+            } catch (secondError) {
+
+                showCameraError(
+                    secondError
+                );
+
+            }
 
         }
 
@@ -1140,17 +436,370 @@ document.addEventListener(
 
 
 /* =====================================================
+   CAMERA ERROR
+===================================================== */
+
+function showCameraError(error) {
+
+    cameraError.classList.add(
+        "show"
+    );
+
+
+    if (
+        error &&
+        error.name ===
+        "NotAllowedError"
+    ) {
+
+        cameraErrorText.textContent =
+            "Camera permission was denied. Allow camera access in your browser settings, then try again.";
+
+        return;
+
+    }
+
+
+    if (
+        error &&
+        error.name ===
+        "NotFoundError"
+    ) {
+
+        cameraErrorText.textContent =
+            "No camera was found on this device.";
+
+        return;
+
+    }
+
+
+    if (
+        error &&
+        error.name ===
+        "NotReadableError"
+    ) {
+
+        cameraErrorText.textContent =
+            "The camera is being used by another application.";
+
+        return;
+
+    }
+
+
+    cameraErrorText.textContent =
+        error?.message ||
+        "Please allow camera access to take an Instant.";
+
+}
+
+
+retryCamera.addEventListener(
+    "click",
+    async () => {
+
+        try {
+
+            await startCamera();
+
+        } catch (error) {
+
+            showCameraError(error);
+
+        }
+
+    }
+);
+
+
+/* =====================================================
+   CAPTURE PHOTO
+===================================================== */
+
+realCaptureButton.addEventListener(
+    "click",
+    capturePhoto
+);
+
+
+function capturePhoto() {
+
+    if (
+        !cameraStream ||
+        !cameraVideo.videoWidth
+    ) {
+
+        return;
+
+    }
+
+
+    const width =
+        cameraVideo.videoWidth;
+
+    const height =
+        cameraVideo.videoHeight;
+
+
+    cameraCanvas.width =
+        width;
+
+    cameraCanvas.height =
+        height;
+
+
+    const context =
+        cameraCanvas.getContext(
+            "2d"
+        );
+
+
+    /*
+        Mirror front camera so
+        selfie preview feels natural.
+    */
+
+    if (
+        cameraFacingMode === "user"
+    ) {
+
+        context.save();
+
+        context.translate(
+            width,
+            0
+        );
+
+        context.scale(
+            -1,
+            1
+        );
+
+        context.drawImage(
+            cameraVideo,
+            0,
+            0,
+            width,
+            height
+        );
+
+        context.restore();
+
+    } else {
+
+        context.drawImage(
+            cameraVideo,
+            0,
+            0,
+            width,
+            height
+        );
+
+    }
+
+
+    const imageData =
+        cameraCanvas.toDataURL(
+            "image/jpeg",
+            .92
+        );
+
+
+    capturedImage.src =
+        imageData;
+
+
+    capturedImage.dataset.image =
+        imageData;
+
+
+    stopCamera();
+
+
+    captureModal.classList.remove(
+        "show"
+    );
+
+
+    previewModal.classList.add(
+        "show"
+    );
+
+}
+
+
+/* =====================================================
+   PREVIEW
+===================================================== */
+
+const previewModal =
+    document.getElementById(
+        "previewModal"
+    );
+
+const capturedImage =
+    document.getElementById(
+        "capturedImage"
+    );
+
+const postInstantButton =
+    document.getElementById(
+        "postInstantButton"
+    );
+
+const discardButton =
+    document.getElementById(
+        "discardButton"
+    );
+
+
+/* =====================================================
+   DISCARD
+===================================================== */
+
+discardButton.addEventListener(
+    "click",
+    discardPhoto
+);
+
+
+function discardPhoto() {
+
+    capturedImage.src = "";
+
+    capturedImage.dataset.image =
+        "";
+
+    previewModal.classList.remove(
+        "show"
+    );
+
+
+    document.body.style.overflow =
+        "";
+
+}
+
+
+/* =====================================================
+   POST REAL INSTANT
+===================================================== */
+
+postInstantButton.addEventListener(
+    "click",
+    postInstant
+);
+
+
+function postInstant() {
+
+    const image =
+        capturedImage.dataset.image;
+
+
+    if (!image) {
+
+        return;
+
+    }
+
+
+    const newInstant = {
+
+        id:
+            "local-" +
+            Date.now(),
+
+        name:
+            "Omar",
+
+        username:
+            "@omar",
+
+        avatar:
+            "O",
+
+        time:
+            "Just now",
+
+        caption:
+            "Just captured this moment.",
+
+        image:
+            image,
+
+        likes:
+            0,
+
+        seen:
+            0,
+
+        mine:
+            true
+
+    };
+
+
+    /*
+        Add newest Instant to the beginning.
+    */
+
+    instants.unshift(
+        newInstant
+    );
+
+
+    currentIndex = 0;
+
+
+    previewModal.classList.remove(
+        "show"
+    );
+
+
+    document.body.style.overflow =
+        "";
+
+
+    renderInstantCards();
+
+
+    updateHomeInstantCount();
+
+
+    updateMyInstantPreview();
+
+
+    showScreen(
+        "instantsScreen"
+    );
+
+
+    capturedImage.src = "";
+
+    capturedImage.dataset.image =
+        "";
+
+}
+
+
+/* =====================================================
    INSTANT DATA
 ===================================================== */
 
-const defaultInstants = [
+const instants = [
 
     {
+
         id: "demo-1",
 
         name: "Ahmed",
+
         username: "@ahmed",
+
         avatar: "A",
+
         time: "2 min ago",
 
         caption:
@@ -1160,15 +809,22 @@ const defaultInstants = [
             "photo-one",
 
         likes: 2,
+
         seen: 5
+
     },
 
+
     {
+
         id: "demo-2",
 
         name: "Mohamed",
+
         username: "@mohamed",
+
         avatar: "M",
+
         time: "8 min ago",
 
         caption:
@@ -1178,15 +834,22 @@ const defaultInstants = [
             "photo-two",
 
         likes: 4,
+
         seen: 7
+
     },
 
+
     {
+
         id: "demo-3",
 
         name: "Youssef",
+
         username: "@youssef",
+
         avatar: "Y",
+
         time: "17 min ago",
 
         caption:
@@ -1196,15 +859,22 @@ const defaultInstants = [
             "photo-three",
 
         likes: 1,
+
         seen: 3
+
     },
 
+
     {
+
         id: "demo-4",
 
         name: "Omar",
+
         username: "@omarh",
+
         avatar: "O",
+
         time: "24 min ago",
 
         caption:
@@ -1214,19 +884,11 @@ const defaultInstants = [
             "photo-four",
 
         likes: 6,
+
         seen: 9
+
     }
 
-];
-
-
-/*
-    Local Instants appear first.
-*/
-
-const instants = [
-    ...localInstants,
-    ...defaultInstants
 ];
 
 
@@ -1238,7 +900,9 @@ let currentIndex = 0;
 ===================================================== */
 
 const cardArea =
-    $("cardArea");
+    document.getElementById(
+        "cardArea"
+    );
 
 
 /* =====================================================
@@ -1247,119 +911,101 @@ const cardArea =
 
 function renderInstantCards() {
 
-    if (!cardArea) {
-        return;
-    }
-
-
     cardArea.innerHTML = "";
 
 
+    if (
+        instants.length === 0
+    ) {
+
+        showFinishedState();
+
+        return;
+
+    }
+
+
     /*
-        Important:
-        index 0 is now physically the top card.
+        Only render cards starting
+        from current index.
     */
 
-    instants.forEach(
-        (instant, index) => {
-
-            const card =
-                document.createElement(
-                    "article"
-                );
+    const visibleInstants =
+        instants.slice(
+            currentIndex
+        );
 
 
-            card.className =
-                "instant-card";
+    /*
+        Reverse for stacking.
+    */
+
+    for (
+        let i =
+            visibleInstants.length - 1;
+
+        i >= 0;
+
+        i--
+    ) {
+
+        const instant =
+            visibleInstants[i];
 
 
-            card.dataset.index =
-                index;
+        const actualIndex =
+            currentIndex + i;
 
 
-            const media =
-                instant.image
-
-                    ? `
-                        <img
-                            src="${instant.image}"
-                            alt=""
-                        >
-
-                        ${
-                            instant.local
-                                ? `
-                                    <span
-                                        class="local-instant-badge"
-                                    >
-                                        Your Instant
-                                    </span>
-                                `
-                                : ""
-                        }
-                    `
-
-                    : `
-                        <div
-                            class="photo-placeholder"
-                        >
-                            ✦
-                        </div>
-                    `;
+        const card =
+            document.createElement(
+                "article"
+            );
 
 
-            const photoClass =
-                instant.photo ||
-                "";
+        card.className =
+            "instant-card";
 
 
-            card.innerHTML = `
+        card.dataset.index =
+            actualIndex;
+
+
+        let photoHTML = "";
+
+
+        if (instant.image) {
+
+            photoHTML = `
 
                 <div
-                    class="
-                        instant-photo
-                        ${photoClass}
+                    class="instant-photo"
+                    style="
+                        background-image:
+                        url('${instant.image}');
                     "
                 >
 
-                    ${media}
+                    <div class="instant-gradient"></div>
 
-                    <div
-                        class="instant-gradient"
-                    ></div>
+                    <div class="instant-info">
 
-
-                    <div
-                        class="instant-info"
-                    >
-
-                        <div
-                            class="instant-user"
-                        >
+                        <div class="instant-user">
 
                             <div class="avatar">
-                                ${escapeHTML(
-                                    instant.avatar
-                                )}
+                                ${instant.avatar}
                             </div>
-
 
                             <div>
 
                                 <strong>
-                                    ${escapeHTML(
-                                        instant.name
-                                    )}
+                                    ${instant.name}
                                 </strong>
 
                                 <span>
-                                    ${escapeHTML(
-                                        instant.username
-                                    )}
+                                    ${instant.username}
                                     ·
-                                    ${escapeHTML(
-                                        instant.time
-                                    )}
+                                    ${instant.time}
                                 </span>
 
                             </div>
@@ -1367,29 +1013,16 @@ function renderInstantCards() {
                         </div>
 
 
-                        ${
-                            instant.caption
-                                ? `
-                                    <p
-                                        class="instant-caption"
-                                    >
-                                        ${escapeHTML(
-                                            instant.caption
-                                        )}
-                                    </p>
-                                `
-                                : ""
-                        }
+                        <p class="instant-caption">
+                            ${instant.caption}
+                        </p>
 
 
-                        <div
-                            class="instant-actions"
-                        >
+                        <div class="instant-actions">
 
                             <button
                                 class="like-button"
-                                data-index="${index}"
-                                type="button"
+                                data-index="${actualIndex}"
                             >
 
                                 <span>
@@ -1403,12 +1036,8 @@ function renderInstantCards() {
                             </button>
 
 
-                            <span
-                                class="seen-text"
-                            >
-                                👀
-                                ${instant.seen}
-                                seen
+                            <span class="seen-text">
+                                👀 ${instant.seen} seen
                             </span>
 
                         </div>
@@ -1419,18 +1048,105 @@ function renderInstantCards() {
 
             `;
 
+        } else {
 
-            cardArea.appendChild(
-                card
-            );
+            photoHTML = `
+
+                <div
+                    class="
+                        instant-photo
+                        ${instant.photo}
+                    "
+                >
+
+                    <div class="photo-placeholder">
+                        ✦
+                    </div>
+
+                    <div class="instant-gradient"></div>
+
+
+                    <div class="instant-info">
+
+                        <div class="instant-user">
+
+                            <div class="avatar">
+                                ${instant.avatar}
+                            </div>
+
+                            <div>
+
+                                <strong>
+                                    ${instant.name}
+                                </strong>
+
+                                <span>
+                                    ${instant.username}
+                                    ·
+                                    ${instant.time}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <p class="instant-caption">
+                            ${instant.caption}
+                        </p>
+
+
+                        <div class="instant-actions">
+
+                            <button
+                                class="like-button"
+                                data-index="${actualIndex}"
+                            >
+
+                                <span>
+                                    ♡
+                                </span>
+
+                                <strong>
+                                    ${instant.likes}
+                                </strong>
+
+                            </button>
+
+
+                            <span class="seen-text">
+                                👀 ${instant.seen} seen
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
 
         }
-    );
+
+
+        card.innerHTML =
+            photoHTML;
+
+
+        cardArea.appendChild(
+            card
+        );
+
+    }
 
 
     setupCardInteractions();
 
+
     updateProgress();
+
+
+    markCurrentInstantSeen();
 
 }
 
@@ -1451,8 +1167,6 @@ function setupCardInteractions() {
 
         let startX = 0;
 
-        let startY = 0;
-
         let currentX = 0;
 
         let dragging = false;
@@ -1471,19 +1185,17 @@ function setupCardInteractions() {
                 if (
                     card !== topCard
                 ) {
+
                     return;
+
                 }
 
 
                 dragging = true;
 
+
                 startX =
                     event.clientX;
-
-                startY =
-                    event.clientY;
-
-                currentX = 0;
 
 
                 card.style.transition =
@@ -1503,7 +1215,9 @@ function setupCardInteractions() {
             event => {
 
                 if (!dragging) {
+
                     return;
+
                 }
 
 
@@ -1540,23 +1254,16 @@ function setupCardInteractions() {
 
         card.addEventListener(
             "pointerup",
-            event => {
+            () => {
 
                 if (!dragging) {
+
                     return;
+
                 }
 
 
                 dragging = false;
-
-
-                try {
-
-                    card.releasePointerCapture(
-                        event.pointerId
-                    );
-
-                } catch {}
 
 
                 card.style.transition =
@@ -1567,7 +1274,9 @@ function setupCardInteractions() {
                     currentX > 120
                 ) {
 
-                    swipeCard(card);
+                    swipeCard(
+                        card
+                    );
 
                 } else {
 
@@ -1576,16 +1285,19 @@ function setupCardInteractions() {
                     );
 
 
-                    setTimeout(() => {
+                    setTimeout(
+                        () => {
 
-                        card.classList.remove(
-                            "return-card"
-                        );
+                            card.classList.remove(
+                                "return-card"
+                            );
 
-                        card.style.transform =
-                            "";
+                            card.style.transform =
+                                "";
 
-                    }, 350);
+                        },
+                        350
+                    );
 
                 }
 
@@ -1601,9 +1313,6 @@ function setupCardInteractions() {
             () => {
 
                 dragging = false;
-
-                card.style.transition =
-                    "";
 
                 card.style.transform =
                     "";
@@ -1638,17 +1347,16 @@ function setupCardInteractions() {
 
 
                     if (
-                        !Number.isInteger(
-                            index
-                        ) ||
                         !instants[index]
                     ) {
+
                         return;
+
                     }
 
 
                     /*
-                        Toggle like
+                        Prevent double-like.
                     */
 
                     if (
@@ -1657,73 +1365,29 @@ function setupCardInteractions() {
                         )
                     ) {
 
-                        instants[index]
-                            .likes--;
-
-                        button.classList.remove(
-                            "liked"
-                        );
-
-                        button.querySelector(
-                            "span"
-                        ).textContent =
-                            "♡";
-
-                    } else {
-
-                        instants[index]
-                            .likes++;
-
-                        button.classList.add(
-                            "liked"
-                        );
-
-                        button.querySelector(
-                            "span"
-                        ).textContent =
-                            "♥";
+                        return;
 
                     }
+
+
+                    instants[index].likes++;
+
+
+                    button.classList.add(
+                        "liked"
+                    );
+
+
+                    button.querySelector(
+                        "span"
+                    ).textContent =
+                        "♥";
 
 
                     button.querySelector(
                         "strong"
                     ).textContent =
-                        instants[index]
-                            .likes;
-
-
-                    /*
-                        Save local likes
-                        for local Instants.
-                    */
-
-                    const instant =
-                        instants[index];
-
-
-                    if (
-                        instant.local
-                    ) {
-
-                        const stored =
-                            localInstants.find(
-                                item =>
-                                    item.id ===
-                                    instant.id
-                            );
-
-
-                        if (stored) {
-
-                            stored.likes =
-                                instant.likes;
-
-                            saveLocalInstants();
-
-                        }
-
-                    }
+                        instants[index].likes;
 
                 }
             );
@@ -1744,31 +1408,37 @@ function swipeCard(card) {
     );
 
 
-    setTimeout(() => {
+    setTimeout(
+        () => {
 
-        currentIndex++;
-
-
-        if (
-            currentIndex >=
-            instants.length
-        ) {
-
-            currentIndex =
-                instants.length;
-
-            showFinishedState();
-
-            return;
-
-        }
+            currentIndex++;
 
 
-        card.remove();
+            if (
+                currentIndex >=
+                instants.length
+            ) {
 
-        updateProgress();
+                currentIndex =
+                    instants.length;
 
-    }, 350);
+
+                showFinishedState();
+
+
+                updateProgress();
+
+
+                return;
+
+            }
+
+
+            renderInstantCards();
+
+        },
+        350
+    );
 
 }
 
@@ -1778,20 +1448,49 @@ function swipeCard(card) {
 ===================================================== */
 
 const currentInstant =
-    $("currentInstant");
+    document.getElementById(
+        "currentInstant"
+    );
+
+const totalInstants =
+    document.getElementById(
+        "totalInstants"
+    );
 
 
 function updateProgress() {
 
     if (!currentInstant) {
+
         return;
+
+    }
+
+
+    const total =
+        instants.length;
+
+
+    totalInstants.textContent =
+        total;
+
+
+    if (
+        total === 0
+    ) {
+
+        currentInstant.textContent =
+            "0";
+
+        return;
+
     }
 
 
     const number =
         Math.min(
             currentIndex + 1,
-            instants.length
+            total
         );
 
 
@@ -1802,15 +1501,45 @@ function updateProgress() {
 
 
 /* =====================================================
-   FINISHED
+   SEEN
+===================================================== */
+
+function markCurrentInstantSeen() {
+
+    if (
+        !instants[currentIndex]
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        instants[currentIndex].mine
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+        Demo only.
+        Supabase will handle this
+        in Phase 3.
+    */
+
+    instants[currentIndex].seen++;
+
+}
+
+
+/* =====================================================
+   FINISHED STATE
 ===================================================== */
 
 function showFinishedState() {
-
-    if (!cardArea) {
-        return;
-    }
-
 
     cardArea.innerHTML = `
 
@@ -1851,9 +1580,51 @@ function showFinishedState() {
                 No more Instants from your friends.
             </p>
 
+
+            <button
+                id="resetInstants"
+                style="
+                    margin-top:20px;
+                    height:40px;
+                    padding:0 18px;
+                    border:none;
+                    border-radius:12px;
+                    background:white;
+                    color:black;
+                    font-family:inherit;
+                    font-size:10px;
+                    font-weight:600;
+                    cursor:pointer;
+                "
+            >
+                View again
+            </button>
+
         </div>
 
     `;
+
+
+    const reset =
+        document.getElementById(
+            "resetInstants"
+        );
+
+
+    if (reset) {
+
+        reset.addEventListener(
+            "click",
+            () => {
+
+                currentIndex = 0;
+
+                renderInstantCards();
+
+            }
+        );
+
+    }
 
 }
 
@@ -1863,71 +1634,146 @@ function showFinishedState() {
 ===================================================== */
 
 const openInstants =
-    $("openInstants");
+    document.getElementById(
+        "openInstants"
+    );
 
 const instantCount =
-    $("instantCount");
-
-
-if (openInstants) {
-
-    openInstants.addEventListener(
-        "click",
-        () => {
-
-            showScreen(
-                "instantsScreen"
-            );
-
-        }
+    document.getElementById(
+        "instantCount"
     );
 
-}
+
+openInstants.addEventListener(
+    "click",
+    () => {
+
+        currentIndex = 0;
+
+        renderInstantCards();
+
+        showScreen(
+            "instantsScreen"
+        );
+
+    }
+);
 
 
-if (instantCount) {
+instantCount.addEventListener(
+    "click",
+    () => {
 
-    instantCount.addEventListener(
-        "click",
-        () => {
+        currentIndex = 0;
 
-            showScreen(
-                "instantsScreen"
-            );
+        renderInstantCards();
 
-        }
-    );
+        showScreen(
+            "instantsScreen"
+        );
 
-}
+    }
+);
 
 
 /* =====================================================
-   HOME INSTANT COUNT
+   HOME COUNT
 ===================================================== */
 
+const instantCountTitle =
+    document.getElementById(
+        "instantCountTitle"
+    );
+
+
 function updateHomeInstantCount() {
-
-    if (!instantCount) {
-        return;
-    }
-
 
     const count =
         instants.length;
 
 
-    const countSpan =
-        instantCount.querySelector(
-            ".count-text span"
+    instantCountTitle.textContent =
+        `${count} new Instants`;
+
+}
+
+
+/* =====================================================
+   MY PROFILE PREVIEW
+===================================================== */
+
+const myInstantPreview =
+    document.getElementById(
+        "myInstantPreview"
+    );
+
+const myInstantCount =
+    document.getElementById(
+        "myInstantCount"
+    );
+
+
+function updateMyInstantPreview() {
+
+    const mine =
+        instants.filter(
+            instant =>
+                instant.mine
         );
 
 
-    if (countSpan) {
+    if (
+        mine.length === 0
+    ) {
 
-        countSpan.textContent =
-            `${count} Instants waiting`;
+        return;
 
     }
+
+
+    mine.forEach(
+        instant => {
+
+            const wrapper =
+                document.createElement(
+                    "div"
+                );
+
+
+            wrapper.className =
+                "mini-instant";
+
+
+            wrapper.innerHTML = `
+
+                <img
+                    src="${instant.image}"
+                    alt="My Instant"
+                >
+
+                <small>
+                    Just now
+                </small>
+
+            `;
+
+
+            myInstantPreview.prepend(
+                wrapper
+            );
+
+        }
+    );
+
+
+    const current =
+        Number(
+            myInstantCount.textContent
+        );
+
+
+    myInstantCount.textContent =
+        current + mine.length;
 
 }
 
@@ -1937,23 +1783,21 @@ function updateHomeInstantCount() {
 ===================================================== */
 
 const requestsButton =
-    $("requestsButton");
-
-
-if (requestsButton) {
-
-    requestsButton.addEventListener(
-        "click",
-        () => {
-
-            showScreen(
-                "requestsScreen"
-            );
-
-        }
+    document.getElementById(
+        "requestsButton"
     );
 
-}
+
+requestsButton.addEventListener(
+    "click",
+    () => {
+
+        showScreen(
+            "requestsScreen"
+        );
+
+    }
+);
 
 
 /* =====================================================
@@ -1976,11 +1820,6 @@ document
                     );
 
 
-                if (!card) {
-                    return;
-                }
-
-
                 button.textContent =
                     "Accepted ✓";
 
@@ -1993,25 +1832,31 @@ document
                     "white";
 
 
-                setTimeout(() => {
+                setTimeout(
+                    () => {
 
-                    card.style.opacity =
-                        "0";
+                        card.style.opacity =
+                            "0";
 
-                    card.style.transform =
-                        "translateX(20px)";
+                        card.style.transform =
+                            "translateX(20px)";
 
-                    card.style.transition =
-                        ".3s ease";
+                        card.style.transition =
+                            ".3s ease";
 
 
-                    setTimeout(() => {
+                        setTimeout(
+                            () => {
 
-                        card.remove();
+                                card.remove();
 
-                    }, 300);
+                            },
+                            300
+                        );
 
-                }, 400);
+                    },
+                    400
+                );
 
             }
         );
@@ -2039,26 +1884,26 @@ document
                     );
 
 
-                if (!card) {
-                    return;
-                }
-
-
                 card.style.opacity =
                     "0";
 
+
                 card.style.transform =
                     "translateX(-20px)";
+
 
                 card.style.transition =
                     ".3s ease";
 
 
-                setTimeout(() => {
+                setTimeout(
+                    () => {
 
-                    card.remove();
+                        card.remove();
 
-                }, 300);
+                    },
+                    300
+                );
 
             }
         );
@@ -2071,45 +1916,54 @@ document
 ===================================================== */
 
 const friendSearch =
-    $("friendSearch");
+    document.getElementById(
+        "friendSearch"
+    );
 
 
-if (friendSearch) {
+friendSearch.addEventListener(
+    "input",
+    () => {
 
-    friendSearch.addEventListener(
-        "input",
-        () => {
-
-            const query =
-                friendSearch.value
-                    .toLowerCase()
-                    .trim();
+        const query =
+            friendSearch.value
+                .toLowerCase()
+                .trim();
 
 
-            const people =
-                document.querySelectorAll(
-                    ".person-row"
-                );
+        const people =
+            document.querySelectorAll(
+                ".person-row"
+            );
 
 
-            people.forEach(person => {
+        people.forEach(
+            person => {
 
                 const text =
                     person.textContent
                         .toLowerCase();
 
 
-                person.style.display =
+                if (
                     text.includes(query)
-                        ? "flex"
-                        : "none";
+                ) {
 
-            });
+                    person.style.display =
+                        "flex";
 
-        }
-    );
+                } else {
 
-}
+                    person.style.display =
+                        "none";
+
+                }
+
+            }
+        );
+
+    }
+);
 
 
 /* =====================================================
@@ -2130,13 +1984,13 @@ document
                     .querySelectorAll(
                         ".friend-tab"
                     )
-                    .forEach(item => {
-
-                        item.classList.remove(
-                            "active"
-                        );
-
-                    });
+                    .forEach(
+                        item =>
+                            item.classList
+                                .remove(
+                                    "active"
+                                )
+                    );
 
 
                 tab.classList.add(
@@ -2162,90 +2016,44 @@ document
 
 
 /* =====================================================
-   PROFILE — LOCAL INSTANTS
+   ESCAPE KEY
 ===================================================== */
 
-function renderLocalProfile() {
+document.addEventListener(
+    "keydown",
+    event => {
 
-    const container =
-        document.querySelector(
-            ".my-instant-preview"
-        );
+        if (
+            event.key ===
+            "Escape"
+        ) {
 
+            if (
+                previewModal.classList.contains(
+                    "show"
+                )
+            ) {
 
-    if (!container) {
-        return;
-    }
+                discardPhoto();
 
+                return;
 
-    /*
-        Keep the existing demo
-        placeholders if no local
-        Instants exist.
-    */
-
-    if (
-        localInstants.length === 0
-    ) {
-        return;
-    }
+            }
 
 
-    container.innerHTML = "";
+            if (
+                captureModal.classList.contains(
+                    "show"
+                )
+            ) {
 
+                closeCamera();
 
-    localInstants.forEach(
-        instant => {
-
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-
-            item.className =
-                "mini-instant";
-
-
-            item.innerHTML = `
-
-                <img
-                    src="${instant.image}"
-                    alt="Your Instant"
-                >
-
-            `;
-
-
-            container.appendChild(
-                item
-            );
+            }
 
         }
-    );
 
-}
-
-
-/* =====================================================
-   CAMERA UI INITIALIZATION
-===================================================== */
-
-buildCameraUI();
-
-
-/* =====================================================
-   INITIALIZE
-===================================================== */
-
-renderInstantCards();
-
-renderLocalProfile();
-
-updateHomeInstantCount();
-
-showScreen(
-    "homeScreen"
+    }
 );
 
 
@@ -2270,14 +2078,13 @@ document.addEventListener(
 
 
 /* =====================================================
-   BEFORE UNLOAD
+   INITIALIZE
 ===================================================== */
 
-window.addEventListener(
-    "beforeunload",
-    () => {
+renderInstantCards();
 
-        stopCamera();
+updateHomeInstantCount();
 
-    }
+showScreen(
+    "homeScreen"
 );
