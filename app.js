@@ -934,12 +934,10 @@ function showMainApp() {
 
 
     /*
-        Keep Phase 2 behavior.
-    */
+     * Load real Instants from Supabase.
+     */
 
-    renderInstantCards();
-
-    updateHomeInstantCount();
+    loadInstants();
 
 }
 
@@ -1851,117 +1849,580 @@ function discardPhoto() {
 
 }
 
-
 /* =====================================================
-   TEMPORARY INSTANT DATA
-   PHASE 3 STORAGE COMES NEXT
+   POST INSTANT
 ===================================================== */
 
-const instants = [
-
-    {
-
-        id: "demo-1",
-
-        name: "Ahmed",
-
-        username: "@ahmed",
-
-        avatar: "A",
-
-        time: "2 min ago",
-
-        caption:
-            "Just got here 😂",
-
-        photo:
-            "photo-one",
-
-        likes: 2,
-
-        seen: 5
-
-    },
+postInstantButton.addEventListener(
+    "click",
+    postInstant
+);
 
 
-    {
+async function postInstant() {
 
-        id: "demo-2",
+    if (!currentUser) {
 
-        name: "Mohamed",
+        showAuth();
 
-        username: "@mohamed",
-
-        avatar: "M",
-
-        time: "8 min ago",
-
-        caption:
-            "This place is actually crazy.",
-
-        photo:
-            "photo-two",
-
-        likes: 4,
-
-        seen: 7
-
-    },
-
-
-    {
-
-        id: "demo-3",
-
-        name: "Youssef",
-
-        username: "@youssef",
-
-        avatar: "Y",
-
-        time: "17 min ago",
-
-        caption:
-            "Trying something new 👀",
-
-        photo:
-            "photo-three",
-
-        likes: 1,
-
-        seen: 3
-
-    },
-
-
-    {
-
-        id: "demo-4",
-
-        name: "Omar",
-
-        username: "@omarh",
-
-        avatar: "O",
-
-        time: "24 min ago",
-
-        caption:
-            "No context.",
-
-        photo:
-            "photo-four",
-
-        likes: 6,
-
-        seen: 9
+        return;
 
     }
 
-];
 
+    const imageData =
+        capturedImage.dataset.image;
+
+
+    if (!imageData) {
+
+        return;
+
+    }
+
+
+    postInstantButton.disabled =
+        true;
+
+
+    postInstantButton.textContent =
+        "Posting...";
+
+
+    try {
+
+        /*
+         * Convert Base64 → Blob
+         */
+
+        const response =
+            await fetch(
+                imageData
+            );
+
+
+        const blob =
+            await response.blob();
+
+
+        /*
+         * Unique storage path
+         */
+
+        const fileName =
+            `${crypto.randomUUID()}.jpg`;
+
+
+        const filePath =
+            `${currentUser.id}/${fileName}`;
+
+
+        /*
+         * Upload to PRIVATE bucket
+         */
+
+        const {
+            error: uploadError
+        } =
+            await supabaseClient
+                .storage
+                .from("instants")
+                .upload(
+                    filePath,
+                    blob,
+                    {
+                        contentType:
+                            "image/jpeg",
+
+                        upsert:
+                            false
+                    }
+                );
+
+
+        if (uploadError) {
+
+            throw uploadError;
+
+        }
+
+
+        /*
+         * Create database row
+         */
+
+        const {
+            error: insertError
+        } =
+            await supabaseClient
+                .from("instants")
+                .insert({
+
+                    user_id:
+                        currentUser.id,
+
+                    image_url:
+                        filePath,
+
+                    caption:
+                        "",
+
+                    /*
+                     * 24 hours
+                     */
+
+                    expires_at:
+                        new Date(
+                            Date.now() +
+                            24 * 60 * 60 * 1000
+                        ).toISOString(),
+
+                    is_active:
+                        true
+
+                });
+
+
+        if (insertError) {
+
+            /*
+             * If DB insert fails,
+             * remove uploaded image.
+             */
+
+            await supabaseClient
+                .storage
+                .from("instants")
+                .remove([
+                    filePath
+                ]);
+
+
+            throw insertError;
+
+        }
+
+
+        /*
+         * Close preview
+         */
+
+        capturedImage.src =
+            "";
+
+        capturedImage.dataset.image =
+            "";
+
+        previewModal.classList.remove(
+            "show"
+        );
+
+
+        document.body.style.overflow =
+            "";
+
+
+        /*
+         * Reload Instants
+         */
+
+        await loadInstants();
+
+
+        /*
+         * Go to profile
+         */
+
+        showScreen(
+            "profileScreen"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Post Instant error:",
+            error
+        );
+
+
+        alert(
+            error?.message ||
+            "Failed to post Instant. Please try again."
+        );
+
+
+    } finally {
+
+        postInstantButton.disabled =
+            false;
+
+        postInstantButton.textContent =
+            "Post Instant";
+
+    }
+
+}
+
+
+/* =====================================================
+   REAL INSTANTS — SUPABASE
+===================================================== */
+
+let instants = [];
 
 let currentIndex = 0;
+
+
+/* =====================================================
+   LOAD MY INSTANTS + FRIEND INSTANTS
+===================================================== */
+
+async function loadInstants() {
+
+    if (!currentUser) {
+        instants = [];
+        return;
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from("instants")
+            .select(`
+                id,
+                user_id,
+                image_url,
+                caption,
+                created_at,
+                expires_at,
+                is_active
+            `)
+            .eq("is_active", true)
+            .order("created_at", {
+                ascending: true
+            });
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data) {
+            instants = [];
+            return;
+        }
+
+
+        /*
+         * Only show active, non-expired Instants.
+         */
+
+        const now = new Date();
+
+        const validInstants =
+            data.filter(instant => {
+
+                if (!instant.expires_at) {
+                    return true;
+                }
+
+                return new Date(
+                    instant.expires_at
+                ) > now;
+
+            });
+
+
+        /*
+         * Get profiles for the users
+         */
+
+        const userIds =
+            [
+                ...new Set(
+                    validInstants.map(
+                        instant =>
+                            instant.user_id
+                    )
+                )
+            ];
+
+
+        let profiles = [];
+
+
+        if (userIds.length) {
+
+            const {
+                data: profileData,
+                error: profileError
+            } =
+                await supabaseClient
+                    .from("profiles")
+                    .select(
+                        "id, username, display_name"
+                    )
+                    .in(
+                        "id",
+                        userIds
+                    );
+
+
+            if (profileError) {
+                throw profileError;
+            }
+
+
+            profiles =
+                profileData || [];
+
+        }
+
+
+        /*
+         * Convert profile list into a quick lookup
+         */
+
+        const profileMap =
+            new Map(
+                profiles.map(
+                    profile => [
+                        profile.id,
+                        profile
+                    ]
+                )
+            );
+
+
+        /*
+         * Create signed URLs
+         *
+         * IMPORTANT:
+         * image_url contains the Storage path,
+         * not a public URL.
+         */
+
+        const processed = [];
+
+
+        for (
+            const instant of validInstants
+        ) {
+
+            const profile =
+                profileMap.get(
+                    instant.user_id
+                );
+
+
+            if (!profile) {
+                continue;
+            }
+
+
+            const {
+                data: signedData,
+                error: signedError
+            } =
+                await supabaseClient
+                    .storage
+                    .from("instants")
+                    .createSignedUrl(
+                        instant.image_url,
+                        60 * 60
+                    );
+
+
+            if (signedError) {
+
+                console.error(
+                    "Signed URL error:",
+                    signedError
+                );
+
+                continue;
+
+            }
+
+
+            processed.push({
+
+                id:
+                    instant.id,
+
+                userId:
+                    instant.user_id,
+
+                name:
+                    profile.display_name ||
+                    "User",
+
+                username:
+                    `@${profile.username || "user"}`,
+
+                avatar:
+                    (
+                        profile.display_name ||
+                        "U"
+                    )
+                        .charAt(0)
+                        .toUpperCase(),
+
+                time:
+                    formatInstantTime(
+                        instant.created_at
+                    ),
+
+                caption:
+                    instant.caption || "",
+
+                image:
+                    signedData?.signedUrl || "",
+
+                likes:
+                    0,
+
+                seen:
+                    0,
+
+                mine:
+                    instant.user_id ===
+                    currentUser.id
+
+            });
+
+        }
+
+
+        instants =
+            processed;
+
+
+        currentIndex = 0;
+
+
+        renderInstantCards();
+
+        updateHomeInstantCount();
+
+        updateMyInstantCount();
+
+
+    } catch (error) {
+
+        console.error(
+            "Load Instants error:",
+            error
+        );
+
+        instants = [];
+
+        renderInstantCards();
+
+        updateHomeInstantCount();
+
+    }
+
+}
+
+
+/* =====================================================
+   FORMAT TIME
+===================================================== */
+
+function formatInstantTime(
+    dateString
+) {
+
+    if (!dateString) {
+        return "";
+    }
+
+
+    const date =
+        new Date(
+            dateString
+        );
+
+
+    const seconds =
+        Math.floor(
+            (
+                Date.now() -
+                date.getTime()
+            ) / 1000
+        );
+
+
+    if (seconds < 60) {
+        return "just now";
+    }
+
+
+    const minutes =
+        Math.floor(
+            seconds / 60
+        );
+
+
+    if (minutes < 60) {
+        return `${minutes}m ago`;
+    }
+
+
+    const hours =
+        Math.floor(
+            minutes / 60
+        );
+
+
+    if (hours < 24) {
+        return `${hours}h ago`;
+    }
+
+
+    const days =
+        Math.floor(
+            hours / 24
+        );
+
+
+    return `${days}d ago`;
+
+}
+
+
+/* =====================================================
+   MY INSTANT COUNT
+===================================================== */
+
+function updateMyInstantCount() {
+
+    const element =
+        document.getElementById(
+            "myInstantCount"
+        );
+
+
+    if (!element) {
+        return;
+    }
+
+
+    const count =
+        instants.filter(
+            instant =>
+                instant.mine
+        ).length;
+
+
+    element.textContent =
+        count;
+
+}
 
 
 /* =====================================================
