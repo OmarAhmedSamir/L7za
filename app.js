@@ -1,11 +1,15 @@
 /* =====================================================
    L7ZA — PHASE 3
    AUTH + CAMERA + REAL INSTANTS
+
    FIXED:
    - MY INSTANTS
+   - ONE VIEW PER USER
+   - VIEWED INSTANTS NEVER RETURN
    - CARD STACKING
    - USER NAMES
    - MOBILE / DESKTOP SCROLL
+   - 24 HOUR EXPIRATION
 ===================================================== */
 
 
@@ -1000,12 +1004,6 @@ function showScreen(screenId) {
 
     });
 
-    /*
-     * Don't force the browser to smooth-scroll.
-     * This was contributing to awkward scrolling
-     * between screens.
-     */
-
     window.scrollTo({
         top: 0,
         behavior: "auto"
@@ -1258,7 +1256,9 @@ function stopCamera() {
 
     cameraStream = null;
 
-    cameraVideo.srcObject = null;
+    if (cameraVideo) {
+        cameraVideo.srcObject = null;
+    }
 
 }
 
@@ -1715,10 +1715,6 @@ async function postInstant() {
         }
 
 
-        /*
-         * Clear preview
-         */
-
         capturedImage.src = "";
         capturedImage.dataset.image = "";
 
@@ -1730,60 +1726,29 @@ async function postInstant() {
 
 
         /*
-         * Reload everything.
-         *
-         * IMPORTANT:
-         * The newly created Instant is now
-         * fetched again from Supabase.
+         * Reload feed + My Instants.
          */
 
         await loadInstants();
 
 
         /*
-         * Make sure the new Instant is available
-         * even if Supabase ordering changes.
+         * Make sure My Instants updates.
          */
 
-        if (insertedInstant?.id) {
+        await renderMyInstantsIfAvailable();
 
-            const newIndex =
-                instants.findIndex(
-                    item =>
-                        item.id ===
-                        insertedInstant.id
-                );
-
-            if (newIndex !== -1) {
-
-                currentIndex =
-                    newIndex;
-
-            } else {
-
-                currentIndex = 0;
-
-            }
-
-        } else {
-
-            currentIndex = 0;
-
-        }
-
-
-        renderInstantCards();
-
-        updateMyInstantCount();
+        await updateMyInstantCount();
 
 
         /*
-         * Show profile after posting.
+         * Open profile.
          */
 
         showScreen(
             "profileScreen"
         );
+
 
     } catch (error) {
 
@@ -1837,23 +1802,23 @@ async function loadInstants() {
 
         updateMyInstantCount();
 
+        renderMyInstantsIfAvailable();
+
         return;
     }
+
 
     try {
 
         /*
-         * IMPORTANT:
-         *
-         * We intentionally load ALL active Instants
-         * available to the authenticated user.
-         *
-         * This includes the current user's own Instants.
+         * =================================================
+         * GET ACTIVE INSTANTS
+         * =================================================
          */
 
         const {
-            data,
-            error
+            data: instantRows,
+            error: instantError
         } =
             await supabaseClient
                 .from("instants")
@@ -1877,45 +1842,128 @@ async function loadInstants() {
                     }
                 );
 
-        if (error) {
-            throw error;
+
+        if (instantError) {
+            throw instantError;
         }
 
-        const rows =
-            data || [];
 
         const now =
             new Date();
 
 
         /*
-         * Remove expired Instants on client side too.
+         * =================================================
+         * REMOVE EXPIRED CLIENT-SIDE
+         * =================================================
          */
 
         const validInstants =
-            rows.filter(instant => {
+            (instantRows || []).filter(
+                instant => {
 
-                if (!instant.expires_at) {
-                    return true;
+                    if (!instant.expires_at) {
+                        return true;
+                    }
+
+                    return (
+                        new Date(
+                            instant.expires_at
+                        ) > now
+                    );
+
                 }
-
-                return (
-                    new Date(
-                        instant.expires_at
-                    ) > now
-                );
-
-            });
+            );
 
 
         /*
-         * Collect all user IDs.
+         * =================================================
+         * GET CURRENT USER'S VIEW HISTORY
+         * =================================================
+         */
+
+        const {
+            data: viewedRows,
+            error: viewedError
+        } =
+            await supabaseClient
+                .from("instant_views")
+                .select(
+                    "instant_id"
+                )
+                .eq(
+                    "user_id",
+                    currentUser.id
+                );
+
+
+        if (viewedError) {
+            throw viewedError;
+        }
+
+
+        const viewedInstantIds =
+            new Set(
+                (viewedRows || []).map(
+                    row =>
+                        row.instant_id
+                )
+            );
+
+
+        /*
+         * =================================================
+         * FEED FILTER
+         *
+         * Own Instants:
+         * NEVER appear in feed.
+         *
+         * Already viewed:
+         * NEVER appear again.
+         * =================================================
+         */
+
+        const feedInstants =
+            validInstants.filter(
+                instant => {
+
+                    if (
+                        instant.user_id ===
+                        currentUser.id
+                    ) {
+
+                        return false;
+
+                    }
+
+
+                    if (
+                        viewedInstantIds.has(
+                            instant.id
+                        )
+                    ) {
+
+                        return false;
+
+                    }
+
+
+                    return true;
+
+                }
+            );
+
+
+        /*
+         * =================================================
+         * PROFILE IDS
+         * =================================================
          */
 
         const userIds =
             [
                 ...new Set(
-                    validInstants.map(
+                    feedInstants.map(
                         instant =>
                             instant.user_id
                     )
@@ -1942,18 +1990,17 @@ async function loadInstants() {
                         userIds
                     );
 
+
             if (profileError) {
                 throw profileError;
             }
 
+
             profiles =
                 profileData || [];
+
         }
 
-
-        /*
-         * Profile lookup.
-         */
 
         const profileMap =
             new Map(
@@ -1967,14 +2014,16 @@ async function loadInstants() {
 
 
         /*
-         * Process images.
+         * =================================================
+         * PROCESS INSTANTS
+         * =================================================
          */
 
         const processed = [];
 
 
         for (
-            const instant of validInstants
+            const instant of feedInstants
         ) {
 
             const profile =
@@ -1983,38 +2032,8 @@ async function loadInstants() {
                 );
 
 
-            /*
-             * If profile isn't returned by RLS,
-             * don't silently break the entire feed.
-             *
-             * Use currentProfile for own Instant.
-             */
-
-            let usableProfile =
-                profile;
-
-
-            if (
-                !usableProfile &&
-                currentUser &&
-                instant.user_id ===
-                currentUser.id
-            ) {
-
-                usableProfile =
-                    currentProfile;
-
-            }
-
-
-            if (!usableProfile) {
-
-                /*
-                 * Keep the Instant visible even if
-                 * profile lookup temporarily fails.
-                 */
-
-                usableProfile = {
+            const usableProfile =
+                profile || {
 
                     username:
                         "user",
@@ -2023,8 +2042,6 @@ async function loadInstants() {
                         "User"
 
                 };
-
-            }
 
 
             const {
@@ -2047,18 +2064,15 @@ async function loadInstants() {
                     signedError
                 );
 
-                /*
-                 * Don't remove the DB Instant.
-                 * Just skip broken image.
-                 */
-
                 continue;
+
             }
 
 
             const displayName =
                 usableProfile.display_name ||
                 "User";
+
 
             const username =
                 usableProfile.username ||
@@ -2102,8 +2116,7 @@ async function loadInstants() {
                     0,
 
                 mine:
-                    instant.user_id ===
-                    currentUser.id,
+                    false,
 
                 createdAt:
                     instant.created_at
@@ -2114,7 +2127,9 @@ async function loadInstants() {
 
 
         /*
-         * Always keep newest first.
+         * =================================================
+         * NEWEST FIRST
+         * =================================================
          */
 
         processed.sort(
@@ -2127,13 +2142,14 @@ async function loadInstants() {
         instants =
             processed;
 
-
-        /*
-         * Start from newest.
-         */
-
         currentIndex = 0;
 
+
+        /*
+         * =================================================
+         * RENDER EVERYTHING
+         * =================================================
+         */
 
         renderInstantCards();
 
@@ -2141,7 +2157,7 @@ async function loadInstants() {
 
         updateMyInstantCount();
 
-        renderMyInstantsIfAvailable();
+        await renderMyInstantsIfAvailable();
 
 
     } catch (error) {
@@ -2151,20 +2167,14 @@ async function loadInstants() {
             error
         );
 
-        /*
-         * Don't wipe already loaded Instants
-         * unnecessarily.
-         */
-
-        if (!instants.length) {
-            instants = [];
-        }
 
         renderInstantCards();
 
         updateHomeInstantCount();
 
         updateMyInstantCount();
+
+        renderMyInstantsIfAvailable();
 
     }
 
@@ -2228,36 +2238,69 @@ function formatInstantTime(dateString) {
    MY INSTANT COUNT
 ===================================================== */
 
-function updateMyInstantCount() {
+async function updateMyInstantCount() {
 
     const element =
         document.getElementById(
             "myInstantCount"
         );
 
-    if (!element) {
+    if (!element || !currentUser) {
         return;
     }
 
-    const count =
-        instants.filter(
-            instant =>
-                instant.mine
-        ).length;
+    try {
 
-    element.textContent =
-        count;
+        const {
+            count,
+            error
+        } =
+            await supabaseClient
+                .from("instants")
+                .select(
+                    "id",
+                    {
+                        count: "exact",
+                        head: true
+                    }
+                )
+                .eq(
+                    "user_id",
+                    currentUser.id
+                )
+                .eq(
+                    "is_active",
+                    true
+                );
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        element.textContent =
+            count || 0;
+
+
+    } catch (error) {
+
+        console.error(
+            "My Instant count error:",
+            error
+        );
+
+    }
 
 }
 
 
 /* =====================================================
-   MY INSTANTS RENDER
-   If your HTML contains a container with one of
-   these IDs, the user's own Instants will appear there.
+   MY INSTANTS
+   DIRECT DATABASE LOAD
 ===================================================== */
 
-function renderMyInstantsIfAvailable() {
+async function renderMyInstantsIfAvailable() {
 
     const container =
         document.getElementById(
@@ -2271,69 +2314,232 @@ function renderMyInstantsIfAvailable() {
         );
 
 
-    if (!container) {
+    if (!container || !currentUser) {
         return;
     }
 
 
-    const mine =
-        instants.filter(
-            instant =>
-                instant.mine
+    try {
+
+        /*
+         * IMPORTANT:
+         *
+         * My Instants are loaded separately.
+         *
+         * They are NOT taken from "instants",
+         * because "instants" is now the feed only.
+         */
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("instants")
+                .select(`
+                    id,
+                    user_id,
+                    image_url,
+                    caption,
+                    created_at,
+                    expires_at,
+                    is_active
+                `)
+                .eq(
+                    "user_id",
+                    currentUser.id
+                )
+                .eq(
+                    "is_active",
+                    true
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending: false
+                    }
+                );
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        const now =
+            new Date();
+
+
+        const mine =
+            (data || []).filter(
+                instant => {
+
+                    if (!instant.expires_at) {
+                        return true;
+                    }
+
+                    return (
+                        new Date(
+                            instant.expires_at
+                        ) > now
+                    );
+
+                }
+            );
+
+
+        if (!mine.length) {
+
+            container.innerHTML = `
+
+                <div class="my-instants-empty">
+
+                    <div>
+                        ✦
+                    </div>
+
+                    <strong>
+                        No Instants yet
+                    </strong>
+
+                    <span>
+                        Your posted Instants will appear here.
+                    </span>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        const processedMine = [];
+
+
+        for (
+            const instant of mine
+        ) {
+
+            const {
+                data: signedData,
+                error: signedError
+            } =
+                await supabaseClient
+                    .storage
+                    .from("instants")
+                    .createSignedUrl(
+                        instant.image_url,
+                        60 * 60
+                    );
+
+
+            if (signedError) {
+
+                console.error(
+                    "My Instant signed URL error:",
+                    signedError
+                );
+
+                continue;
+
+            }
+
+
+            processedMine.push({
+
+                ...instant,
+
+                image:
+                    signedData?.signedUrl ||
+                    "",
+
+                time:
+                    formatInstantTime(
+                        instant.created_at
+                    )
+
+            });
+
+        }
+
+
+        container.innerHTML =
+            processedMine
+                .map(
+                    instant => {
+
+                        return `
+
+                            <article
+                                class="my-instant-item"
+                                data-instant-id="${escapeHTML(
+                                    instant.id
+                                )}"
+                            >
+
+                                <div
+                                    class="my-instant-image"
+                                    style="
+                                        background-image:
+                                        url('${escapeAttribute(
+                                            instant.image
+                                        )}');
+                                    "
+                                ></div>
+
+                                <div
+                                    class="my-instant-meta"
+                                >
+
+                                    <strong>
+                                        ${escapeHTML(
+                                            currentProfile?.display_name ||
+                                            "You"
+                                        )}
+                                    </strong>
+
+                                    <span>
+                                        ${escapeHTML(
+                                            instant.time
+                                        )}
+                                    </span>
+
+                                </div>
+
+                            </article>
+
+                        `;
+
+                    }
+                )
+                .join("");
+
+
+    } catch (error) {
+
+        console.error(
+            "My Instants error:",
+            error
         );
 
 
-    if (!mine.length) {
-
         container.innerHTML = `
+
             <div class="my-instants-empty">
-                No Instants yet.
+                Couldn't load your Instants.
             </div>
+
         `;
 
-        return;
     }
-
-
-    container.innerHTML =
-        mine.map(instant => {
-
-            return `
-                <article
-                    class="my-instant-item"
-                    data-instant-id="${escapeHTML(instant.id)}"
-                >
-
-                    <div
-                        class="my-instant-image"
-                        style="
-                            background-image:
-                            url('${escapeAttribute(instant.image)}');
-                        "
-                    ></div>
-
-                    <div class="my-instant-meta">
-
-                        <strong>
-                            ${escapeHTML(instant.name)}
-                        </strong>
-
-                        <span>
-                            ${escapeHTML(instant.time)}
-                        </span>
-
-                    </div>
-
-                </article>
-            `;
-
-        }).join("");
 
 }
 
 
 /* =====================================================
-   SAFE HTML HELPERS
+   SAFE HTML
 ===================================================== */
 
 function escapeHTML(value) {
@@ -2341,26 +2547,11 @@ function escapeHTML(value) {
     return String(
         value ?? ""
     )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
 }
 
@@ -2402,25 +2593,32 @@ function renderInstantCards() {
         return;
     }
 
+
     cardArea.innerHTML = "";
 
-    if (!instants.length) {
+
+    /*
+     * IMPORTANT:
+     *
+     * No "View again".
+     *
+     * Once currentIndex reaches the end,
+     * the feed stays finished.
+     */
+
+    if (
+        !instants.length ||
+        currentIndex >= instants.length
+    ) {
 
         showFinishedState();
 
         updateProgress();
 
         return;
+
     }
 
-
-    /*
-     * Only render the current Instant and the
-     * next few cards.
-     *
-     * This prevents dozens of cards from sitting
-     * on top of each other and causing visual overlap.
-     */
 
     const cardsToRender =
         instants.slice(
@@ -2454,12 +2652,6 @@ function renderInstantCards() {
                 actualIndex;
 
 
-            /*
-             * Explicit stack order.
-             *
-             * First card = top card.
-             */
-
             card.style.zIndex =
                 String(
                     100 -
@@ -2467,11 +2659,9 @@ function renderInstantCards() {
                 );
 
 
-            /*
-             * Slight depth for cards behind.
-             */
-
-            if (relativeIndex === 1) {
+            if (
+                relativeIndex === 1
+            ) {
 
                 card.style.transform =
                     "scale(.97) translateY(8px)";
@@ -2497,15 +2687,18 @@ function renderInstantCards() {
                     instant.name
                 );
 
+
             const safeUsername =
                 escapeHTML(
                     instant.username
                 );
 
+
             const safeCaption =
                 escapeHTML(
                     instant.caption
                 );
+
 
             const safeAvatar =
                 escapeHTML(
@@ -2524,7 +2717,9 @@ function renderInstantCards() {
                         class="instant-photo"
                         style="
                             background-image:
-                            url('${escapeAttribute(instant.image)}');
+                            url('${escapeAttribute(
+                                instant.image
+                            )}');
                         "
                     >
 
@@ -2557,110 +2752,9 @@ function renderInstantCards() {
                                     <span>
                                         ${safeUsername}
                                         ·
-                                        ${escapeHTML(instant.time)}
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-                            ${
-                                safeCaption
-                                    ? `
-                                        <p
-                                            class="instant-caption"
-                                        >
-                                            ${safeCaption}
-                                        </p>
-                                    `
-                                    : ""
-                            }
-
-                            <div
-                                class="instant-actions"
-                            >
-
-                                <button
-                                    class="like-button"
-                                    data-index="${actualIndex}"
-                                    type="button"
-                                >
-
-                                    <span>
-                                        ♡
-                                    </span>
-
-                                    <strong>
-                                        ${instant.likes}
-                                    </strong>
-
-                                </button>
-
-                                <span
-                                    class="seen-text"
-                                >
-                                    👀
-                                    ${instant.seen}
-                                    seen
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                `;
-
-            } else {
-
-                photoHTML = `
-
-                    <div
-                        class="
-                            instant-photo
-                            ${escapeHTML(
-                                instant.photo || ""
-                            )}
-                        "
-                    >
-
-                        <div
-                            class="photo-placeholder"
-                        >
-                            ✦
-                        </div>
-
-                        <div
-                            class="instant-gradient"
-                        ></div>
-
-                        <div
-                            class="instant-info"
-                        >
-
-                            <div
-                                class="instant-user"
-                            >
-
-                                <div
-                                    class="avatar"
-                                >
-                                    ${safeAvatar}
-                                </div>
-
-                                <div
-                                    class="instant-user-text"
-                                >
-
-                                    <strong>
-                                        ${safeName}
-                                    </strong>
-
-                                    <span>
-                                        ${safeUsername}
-                                        ·
-                                        ${escapeHTML(instant.time)}
+                                        ${escapeHTML(
+                                            instant.time
+                                        )}
                                     </span>
 
                                 </div>
@@ -2734,14 +2828,11 @@ function renderInstantCards() {
 
     updateProgress();
 
-    markCurrentInstantSeen();
-
 }
 
 
 /* =====================================================
    CARD INTERACTIONS
-   IMPORTANT SCROLL FIX
 ===================================================== */
 
 function setupCardInteractions() {
@@ -2754,14 +2845,11 @@ function setupCardInteractions() {
 
     cards.forEach(card => {
 
-        /*
-         * Only the first/current card is swipeable.
-         */
-
         const cardIndex =
             Number(
                 card.dataset.index
             );
+
 
         const isTopCard =
             cardIndex ===
@@ -2778,36 +2866,21 @@ function setupCardInteractions() {
         }
 
 
-        /*
-         * Allow normal vertical scrolling.
-         *
-         * We do NOT use:
-         * setPointerCapture()
-         * immediately on pointerdown.
-         */
-
         card.style.touchAction =
             "pan-y";
 
 
         let startX = 0;
         let startY = 0;
-
         let currentX = 0;
 
         let dragging = false;
-
-        let horizontalSwipe =
-            false;
+        let horizontalSwipe = false;
 
 
         card.addEventListener(
             "pointerdown",
             event => {
-
-                /*
-                 * Ignore buttons.
-                 */
 
                 if (
                     event.target.closest(
@@ -2850,16 +2923,15 @@ function setupCardInteractions() {
                     event.clientX -
                     startX;
 
+
                 const deltaY =
                     event.clientY -
                     startY;
 
 
                 /*
-                 * Don't interfere with vertical scrolling.
-                 *
-                 * Once movement is clearly vertical,
-                 * completely abandon swipe.
+                 * Vertical movement:
+                 * allow normal page scrolling.
                  */
 
                 if (
@@ -2877,8 +2949,7 @@ function setupCardInteractions() {
 
 
                 /*
-                 * Start horizontal swipe only after
-                 * a clear horizontal movement.
+                 * Start horizontal swipe.
                  */
 
                 if (
@@ -2890,10 +2961,6 @@ function setupCardInteractions() {
 
                     horizontalSwipe = true;
 
-                    /*
-                     * Capture only AFTER we know
-                     * the user wants a horizontal swipe.
-                     */
 
                     try {
 
@@ -2902,7 +2969,7 @@ function setupCardInteractions() {
                         );
 
                     } catch (error) {
-                        // Ignore capture errors.
+                        // Ignore.
                     }
 
                 }
@@ -2912,6 +2979,10 @@ function setupCardInteractions() {
                     return;
                 }
 
+
+                /*
+                 * Only allow swipe to the right.
+                 */
 
                 currentX =
                     Math.max(
@@ -2949,6 +3020,7 @@ function setupCardInteractions() {
                     return;
                 }
 
+
                 dragging = false;
 
 
@@ -2985,6 +3057,7 @@ function setupCardInteractions() {
                     card.classList.add(
                         "return-card"
                     );
+
 
                     setTimeout(
                         () => {
@@ -3030,7 +3103,7 @@ function setupCardInteractions() {
 
 
     /*
-     * LIKE BUTTONS
+     * LIKE BUTTON
      */
 
     document
@@ -3045,10 +3118,12 @@ function setupCardInteractions() {
 
                     event.stopPropagation();
 
+
                     const index =
                         Number(
                             button.dataset.index
                         );
+
 
                     if (
                         !instants[index]
@@ -3057,6 +3132,7 @@ function setupCardInteractions() {
                         return;
 
                     }
+
 
                     if (
                         button.classList.contains(
@@ -3068,29 +3144,38 @@ function setupCardInteractions() {
 
                     }
 
+
                     instants[index].likes++;
+
 
                     button.classList.add(
                         "liked"
                     );
+
 
                     const icon =
                         button.querySelector(
                             "span"
                         );
 
+
                     const count =
                         button.querySelector(
                             "strong"
                         );
 
+
                     if (icon) {
-                        icon.textContent = "♥";
+                        icon.textContent =
+                            "♥";
                     }
 
+
                     if (count) {
+
                         count.textContent =
                             instants[index].likes;
+
                     }
 
                 }
@@ -3102,16 +3187,43 @@ function setupCardInteractions() {
 
 
 /* =====================================================
-   SWIPE
+   SWIPE CARD
 ===================================================== */
 
-function swipeCard(card) {
+async function swipeCard(card) {
+
+    const instant =
+        instants[currentIndex];
+
+
+    /*
+     * IMPORTANT:
+     *
+     * Record the view BEFORE removing the card.
+     *
+     * The database becomes the source of truth.
+     */
+
+    if (
+        instant &&
+        currentUser &&
+        instant.id
+    ) {
+
+        await markInstantAsViewed(
+            instant.id
+        );
+
+    }
+
 
     card.style.transition =
         "transform .35s ease, opacity .35s ease";
 
+
     card.style.transform =
         "translateX(120%) rotate(12deg)";
+
 
     card.style.opacity =
         "0";
@@ -3135,6 +3247,13 @@ function swipeCard(card) {
 
                 updateProgress();
 
+                /*
+                 * Refresh My Instants only.
+                 * Feed is already finished.
+                 */
+
+                renderMyInstantsIfAvailable();
+
                 return;
 
             }
@@ -3145,6 +3264,81 @@ function swipeCard(card) {
         },
         350
     );
+
+}
+
+
+/* =====================================================
+   MARK INSTANT AS VIEWED
+===================================================== */
+
+async function markInstantAsViewed(
+    instantId
+) {
+
+    if (
+        !currentUser ||
+        !instantId
+    ) {
+
+        return false;
+
+    }
+
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("instant_views")
+                .insert({
+
+                    instant_id:
+                        instantId,
+
+                    user_id:
+                        currentUser.id
+
+                });
+
+
+        /*
+         * 23505 = duplicate key.
+         *
+         * That means the user already viewed it.
+         * This is NOT an actual error for our logic.
+         */
+
+        if (
+            error &&
+            error.code !== "23505"
+        ) {
+
+            console.error(
+                "Mark Instant viewed error:",
+                error
+            );
+
+            return false;
+
+        }
+
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(
+            "Mark Instant viewed error:",
+            error
+        );
+
+        return false;
+
+    }
 
 }
 
@@ -3181,11 +3375,14 @@ function updateProgress() {
     if (!total) {
 
         if (currentInstant) {
+
             currentInstant.textContent =
                 "0";
+
         }
 
         return;
+
     }
 
 
@@ -3207,47 +3404,6 @@ function updateProgress() {
 
 
 /* =====================================================
-   SEEN
-===================================================== */
-
-function markCurrentInstantSeen() {
-
-    if (
-        !instants[currentIndex]
-    ) {
-
-        return;
-    }
-
-    if (
-        instants[currentIndex].mine
-    ) {
-
-        return;
-    }
-
-    /*
-     * Don't repeatedly increase the same
-     * seen count every time render runs.
-     */
-
-    if (
-        instants[currentIndex]._seenMarked
-    ) {
-
-        return;
-
-    }
-
-    instants[currentIndex]._seenMarked =
-        true;
-
-    instants[currentIndex].seen++;
-
-}
-
-
-/* =====================================================
    FINISHED
 ===================================================== */
 
@@ -3256,6 +3412,7 @@ function showFinishedState() {
     if (!cardArea) {
         return;
     }
+
 
     cardArea.innerHTML = `
 
@@ -3294,51 +3451,9 @@ function showFinishedState() {
                 No more Instants from your friends.
             </p>
 
-            <button
-                id="resetInstants"
-                type="button"
-                style="
-                    margin-top:20px;
-                    height:40px;
-                    padding:0 18px;
-                    border:none;
-                    border-radius:12px;
-                    background:white;
-                    color:black;
-                    font-family:inherit;
-                    font-size:10px;
-                    font-weight:600;
-                    cursor:pointer;
-                "
-            >
-                View again
-            </button>
-
         </div>
 
     `;
-
-
-    const reset =
-        document.getElementById(
-            "resetInstants"
-        );
-
-
-    if (reset) {
-
-        reset.addEventListener(
-            "click",
-            () => {
-
-                currentIndex = 0;
-
-                renderInstantCards();
-
-            }
-        );
-
-    }
 
 }
 
@@ -3362,11 +3477,16 @@ if (openInstants) {
 
     openInstants.addEventListener(
         "click",
-        () => {
+        async () => {
 
-            currentIndex = 0;
+            /*
+             * Reload from database.
+             *
+             * This automatically excludes
+             * everything already viewed.
+             */
 
-            renderInstantCards();
+            await loadInstants();
 
             showScreen(
                 "instantsScreen"
@@ -3382,11 +3502,9 @@ if (instantCount) {
 
     instantCount.addEventListener(
         "click",
-        () => {
+        async () => {
 
-            currentIndex = 0;
-
-            renderInstantCards();
+            await loadInstants();
 
             showScreen(
                 "instantsScreen"
@@ -3414,8 +3532,10 @@ function updateHomeInstantCount() {
         return;
     }
 
+
     const count =
         instants.length;
+
 
     instantCountTitle.textContent =
         `${count} new Instant${count === 1 ? "" : "s"}`;
@@ -3470,16 +3590,19 @@ if (friendSearch) {
                     .toLowerCase()
                     .trim();
 
+
             const people =
                 document.querySelectorAll(
                     ".person-row"
                 );
+
 
             people.forEach(person => {
 
                 const text =
                     person.textContent
                         .toLowerCase();
+
 
                 person.style.display =
                     text.includes(query)
@@ -3519,9 +3642,11 @@ document
                             )
                     );
 
+
                 tab.classList.add(
                     "active"
                 );
+
 
                 if (
                     tab.dataset.tab ===
@@ -3567,6 +3692,7 @@ document.addEventListener(
             discardPhoto();
 
             return;
+
         }
 
 
@@ -3594,7 +3720,9 @@ document.addEventListener(
     () => {
 
         if (document.hidden) {
+
             stopCamera();
+
         }
 
     }
@@ -3602,7 +3730,7 @@ document.addEventListener(
 
 
 /* =====================================================
-   REFRESH INSTANTS WHEN RETURNING TO APP
+   REFRESH INSTANTS WHEN RETURNING
 ===================================================== */
 
 window.addEventListener(
@@ -3613,9 +3741,6 @@ window.addEventListener(
             return;
         }
 
-        /*
-         * Don't refresh while camera is open.
-         */
 
         if (
             captureModal &&
@@ -3627,6 +3752,7 @@ window.addEventListener(
             return;
 
         }
+
 
         loadInstants();
 
